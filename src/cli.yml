@@ -1,0 +1,19 @@
+name: ssp16asm
+version: "0.1"
+author: Javier de Silóniz <taiyou@gmail.com>
+about: A quick and dirty assembler for the Samsung SSP16xx family of DSPs, built under the sun of Cádiz.
+args:
+    - INPUT:
+        help: input file to assemble
+        required: true
+        index: 1
+    - OUTPUT:
+        help: output assembled object file
+        required: true
+        index: 2
+    - debug:
+        short: d
+        long: debug
+        multiple: false
+        help: Shows debugging information
+subcommands:

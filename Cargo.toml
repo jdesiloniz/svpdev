@@ -1,0 +1,8 @@
+[package]
+name = "ssp16asm"
+version = "0.1.0"
+authors = ["Javier de Silóniz Sandino <taiyou@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+clap = {version = "2.33", features = ["yaml"]}
