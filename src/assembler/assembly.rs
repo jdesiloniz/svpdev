@@ -8,6 +8,8 @@ use crate::tokenization::tokens;
 use std::collections::HashMap;
 use std::error::Error;
 
+const MAX_BINARY_SIZE: u32 = 0x1FFFE;
+
 pub fn extract_tables<'a>(
     tokens: &Vec<tokens::Token<'a>>,
 ) -> (HashMap<&'a str, u16>, HashMap<&'a str, u16>) {
@@ -189,14 +191,17 @@ pub fn generate_opcodes<'a>(
     equs: &'a HashMap<&'a str, u16>,
     show_debug: bool,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut binary: Vec<u8> = [0; 0x1FFFE].to_vec();
+    let mut binary: Vec<u8> = [0; MAX_BINARY_SIZE as usize].to_vec();
 
-    let mut current_address: u16 = 0;
+    let mut current_address: u32 = 0;
     let mut current_operation: Option<operations::Operation> = None;
     let mut errors: Vec<errors::AssemblyError> = Vec::new();
-    let mut max_address: u16 = 0;
+    let mut max_address: u32 = 0;
 
     for token in tokens.iter() {
+        if max_address > MAX_BINARY_SIZE {
+            return Err(Box::new(errors::AssemblyError("Exceeded max binary size.".to_string())));
+        }
         let mut proper_token: tokens::Token = *token;
 
         proper_token = match token {
@@ -238,7 +243,7 @@ pub fn generate_opcodes<'a>(
                 tokens::Token::Operator(operators::SspOperator::Word(value)),
             ) => {
                 current_operation = None;
-                current_address = *value * 2;
+                current_address = *value as u32 * 2;
             }
 
             // Equ macro
