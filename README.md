@@ -113,6 +113,7 @@ This was my first real project built in Rust (during my spare time in the span o
 * More intensive testing.
 * DUP assembler macro.
 * Includes somewhere down the line...?
+* Improve binary creation (include dynamic size handling beyond the 128KB limit).
 
 ## Acknowledges
 

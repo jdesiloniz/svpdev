@@ -200,7 +200,9 @@ pub fn generate_opcodes<'a>(
 
     for token in tokens.iter() {
         if max_address > MAX_BINARY_SIZE {
-            return Err(Box::new(errors::AssemblyError("Exceeded max binary size.".to_string())));
+            return Err(Box::new(errors::AssemblyError(
+                "Exceeded max binary size.".to_string(),
+            )));
         }
         let mut proper_token: tokens::Token = *token;
 
