@@ -8,7 +8,7 @@ use crate::tokenization::tokens;
 use std::collections::HashMap;
 use std::error::Error;
 
-const MAX_BINARY_SIZE: u32 = 0x1FFFE;
+const MAX_BINARY_SIZE: u32 = 0x20000;
 
 pub fn extract_tables<'a>(
     tokens: &Vec<tokens::Token<'a>>,
