@@ -288,7 +288,7 @@ impl<'a> fmt::Debug for SspOperator<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             SspOperator::Byte(value) => write!(f, "SspOperator(Byte({:02X}))", value),
-            SspOperator::Word(value) => write!(f, "SspOperator(Byte({:02X}))", value),
+            SspOperator::Word(value) => write!(f, "SspOperator(Word({:02X}))", value),
             SspOperator::Reg(reg) => write!(f, "SspOperator(Reg({:?}))", reg),
             SspOperator::Ptr(reg) => write!(f, "SspOperator(Ptr({:?}))", reg),
             SspOperator::PtrRef(reg) => write!(f, "SspOperator(PtrRef({:?}))", reg),
