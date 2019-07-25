@@ -35,11 +35,11 @@ pub fn extract_tables<'a>(
                     symbols.insert(label, current_address);
                     0
                 }
-                (tokens::Token::Mnemonic(_), Some(tokens::Token::Label(label))) => {
+                (tokens::Token::Mnemonic(mnemonic), Some(tokens::Token::Label(label))) => {
                     current_dw = false;
                     current_org = false;
                     symbols.insert(label, current_address);
-                    0
+                    mnemonic_size(*mnemonic)
                 }
                 (tokens::Token::Invalid(_), Some(tokens::Token::Label(label))) => {
                     current_dw = false;
@@ -94,80 +94,10 @@ pub fn extract_tables<'a>(
                     }
                 }
 
-                (
-                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::Sub(
-                        mnemonics::SspMnemonicModifier::Immediate,
-                    )),
-                    _,
-                ) => {
+                (tokens::Token::Mnemonic(mnemonic), _) => {
                     current_dw = false;
                     current_org = false;
-                    2
-                }
-                (
-                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::Cmp(
-                        mnemonics::SspMnemonicModifier::Immediate,
-                    )),
-                    _,
-                ) => {
-                    current_dw = false;
-                    current_org = false;
-                    2
-                }
-                (
-                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::Add(
-                        mnemonics::SspMnemonicModifier::Immediate,
-                    )),
-                    _,
-                ) => {
-                    current_dw = false;
-                    current_org = false;
-                    2
-                }
-                (
-                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::And(
-                        mnemonics::SspMnemonicModifier::Immediate,
-                    )),
-                    _,
-                ) => {
-                    current_dw = false;
-                    current_org = false;
-                    2
-                }
-                (
-                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::Or(
-                        mnemonics::SspMnemonicModifier::Immediate,
-                    )),
-                    _,
-                ) => {
-                    current_dw = false;
-                    current_org = false;
-                    2
-                }
-                (
-                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::Ld(
-                        mnemonics::SspMnemonicModifier::Immediate,
-                    )),
-                    _,
-                ) => {
-                    current_dw = false;
-                    current_org = false;
-                    2
-                }
-                (tokens::Token::Mnemonic(mnemonics::SspMnemonic::Bra), _) => {
-                    current_dw = false;
-                    current_org = false;
-                    2
-                }
-                (tokens::Token::Mnemonic(mnemonics::SspMnemonic::Call), _) => {
-                    current_dw = false;
-                    current_org = false;
-                    2
-                }
-                (tokens::Token::Mnemonic(_), _) => {
-                    current_dw = false;
-                    current_org = false;
-                    1
+                    mnemonic_size(*mnemonic)
                 }
 
                 (_, _) => {
@@ -183,6 +113,28 @@ pub fn extract_tables<'a>(
         },
     );
     (symbols, equs)
+}
+
+pub fn mnemonic_size(mnemonic: mnemonics::SspMnemonic) -> u16 {
+    match mnemonic {
+        mnemonics::SspMnemonic::Sub(mnemonics::SspMnemonicModifier::Immediate) => 2,
+
+        mnemonics::SspMnemonic::Cmp(mnemonics::SspMnemonicModifier::Immediate) => 2,
+
+        mnemonics::SspMnemonic::Add(mnemonics::SspMnemonicModifier::Immediate) => 2,
+
+        mnemonics::SspMnemonic::And(mnemonics::SspMnemonicModifier::Immediate) => 2,
+
+        mnemonics::SspMnemonic::Or(mnemonics::SspMnemonicModifier::Immediate) => 2,
+
+        mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Immediate) => 2,
+
+        mnemonics::SspMnemonic::Bra => 2,
+
+        mnemonics::SspMnemonic::Call => 2,
+
+        _ => 1,
+    }
 }
 
 pub fn generate_opcodes<'a>(

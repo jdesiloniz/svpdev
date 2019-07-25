@@ -52,8 +52,13 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     file.write_all(&opcodes)?;
 
     if config.is_debug {
-        print_debug_info(&tokens, &symbol_table, &equ_table, &opcodes);
+        print_debug_info(&tokens, &opcodes);
     }
+
+    println!("");
+    print_table(&symbol_table, "Symbol table");
+    println!("");
+    print_table(&equ_table, "Constants table");
 
     Ok(())
 }
@@ -61,18 +66,15 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 pub fn print_table<'a>(table: &HashMap<&'a str, u16>, title: &str) {
     if table.len() > 0 {
         println!("**** {} ****", title);
-        table.iter().for_each(|(k, v)| println!("{} -> {}", k, v))
+        table
+            .iter()
+            .for_each(|(k, v)| println!("{} -> {:04X}", k, v))
     } else {
         println!("No elements found for {}", title);
     }
 }
 
-pub fn print_debug_info<'a>(
-    tokens: &Vec<tokens::Token>,
-    symbol_table: &HashMap<&'a str, u16>,
-    equ_table: &HashMap<&'a str, u16>,
-    opcodes: &Vec<u8>,
-) {
+pub fn print_debug_info<'a>(tokens: &Vec<tokens::Token>, opcodes: &Vec<u8>) {
     if tokens.len() > 0 {
         println!("\nFound tokens:");
         for token in tokens {
@@ -81,11 +83,6 @@ pub fn print_debug_info<'a>(
     } else {
         println!("\nNo tokens found!");
     }
-
-    println!("");
-    print_table(&symbol_table, "Symbol table");
-    println!("");
-    print_table(&equ_table, "Constants table");
 
     println!("\nGenerated opcodes:");
     println!("{:02X?}", opcodes);
