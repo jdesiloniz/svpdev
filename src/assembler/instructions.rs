@@ -279,7 +279,7 @@ impl<'a> Instruction<'a> {
 
             // **** Arithmetic ops with one operator ****
 
-            // OPi imm
+            // OPi simm
             (
                 Some(mnemonics::SspMnemonic::Sub(mnemonics::SspMnemonicModifier::Immediate)),
                 Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
@@ -384,54 +384,6 @@ impl<'a> Instruction<'a> {
                 vec![0xE8, 0x0],
                 value,
             )),
-
-            (
-                Some(mnemonics::SspMnemonic::Sub(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(
-                    registers::SspGeneralRegister::A,
-                ))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![0x28, 0x0, 0x0, value]),
-
-            (
-                Some(mnemonics::SspMnemonic::Cmp(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(
-                    registers::SspGeneralRegister::A,
-                ))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![0x68, 0x0, 0x0, value]),
-
-            (
-                Some(mnemonics::SspMnemonic::Add(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(
-                    registers::SspGeneralRegister::A,
-                ))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![0x88, 0x0, 0x0, value]),
-
-            (
-                Some(mnemonics::SspMnemonic::And(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(
-                    registers::SspGeneralRegister::A,
-                ))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![0xA8, 0x0, 0x0, value]),
-
-            (
-                Some(mnemonics::SspMnemonic::Or(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(
-                    registers::SspGeneralRegister::A,
-                ))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![0xC8, 0x0, 0x0, value]),
-
-            (
-                Some(mnemonics::SspMnemonic::Eor(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(
-                    registers::SspGeneralRegister::A,
-                ))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![0xE8, 0x0, 0x0, value]),
 
             // OP A, s
             (
@@ -826,12 +778,6 @@ impl<'a> Instruction<'a> {
                 value,
             )),
 
-            (
-                Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(dst))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![0x8, dst.value() << 4, 0, value]),
-
             // LD d, ((ri))
             (
                 Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
@@ -854,16 +800,6 @@ impl<'a> Instruction<'a> {
                 ],
                 value,
             )),
-
-            (
-                Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Immediate)),
-                Some(tokens::Token::Operator(operators::SspOperator::PtrRef(dst))),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
-            ) => Ok(vec![
-                0xC + dst.ram_bank(),
-                (dst.modifier_value() << 2) + dst.value(),
-                value,
-            ]),
 
             // LD addr, a
             (

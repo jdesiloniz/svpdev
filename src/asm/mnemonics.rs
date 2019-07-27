@@ -49,6 +49,20 @@ impl SspMnemonic {
             _ => None,
         }
     }
+
+    pub fn is_immediate(mnemonic: SspMnemonic) -> bool {
+        match mnemonic {
+            SspMnemonic::Sub(SspMnemonicModifier::Immediate)    =>   true,
+            SspMnemonic::Cmp(SspMnemonicModifier::Immediate)    =>   true,
+            SspMnemonic::Add(SspMnemonicModifier::Immediate)    =>   true,
+            SspMnemonic::And(SspMnemonicModifier::Immediate)    =>   true,
+            SspMnemonic::Or(SspMnemonicModifier::Immediate)     =>   true,
+            SspMnemonic::Eor(SspMnemonicModifier::Immediate)    =>   true,
+            SspMnemonic::Ld(SspMnemonicModifier::Immediate)     =>   true,
+            _                                                   =>   false,
+        }
+
+    }
 }
 
 #[cfg(test)]
