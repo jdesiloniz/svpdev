@@ -40,9 +40,9 @@ Six arithmetic operations (`sub`,`cmp`, `add`, `and`, `or`, `eor`) can be applie
 
 #### Load instructions
 
-There's only one load opcode (`LD`). As with the arithmetic instructions, `LD` can also be used with numeric values. In that case, the suffix `i` is also applied. Also take into account that in most situations bytes and words can be used indistinctively. i.e.:
+There's only one load opcode (`LD`). As with the arithmetic instructions, `LD` can also be used with numeric values. In that case, the suffix `i` is also applied. For load instructions only words are allowed:
 
-* `LDI A, 9`.
+* `LDI A, 0009`.
 * `LDI A, 8080`.
 
 But some of the instructions require a word, i.e.:
