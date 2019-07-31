@@ -2,6 +2,7 @@ use super::errors;
 use super::instructions;
 use super::operations;
 use crate::asm::macros;
+use crate::asm::mnemonics;
 use crate::asm::operators;
 use crate::tokenization::tokens;
 use std::collections::HashMap;
@@ -77,6 +78,16 @@ pub fn extract_tables<'a>(
                     0
                 }
 
+                (
+                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    Some(tokens::Token::Mnemonic(mnemonics::SspMnemonic::Ld(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))),
+                ) => {
+                    // Special case for LD addr, a
+                    0
+                }
+
                 (tokens::Token::Operator(operators::SspOperator::Word(value)), _) => {
                     if current_org {
                         current_address = *value;
@@ -93,9 +104,7 @@ pub fn extract_tables<'a>(
                     }
                 }
 
-                (tokens::Token::Operator(operators::SspOperator::LabelRef(_)), _) => {
-                    1
-                }
+                (tokens::Token::Operator(operators::SspOperator::LabelRef(_)), _) => 1,
 
                 (tokens::Token::Mnemonic(_), _) => {
                     current_dw = false;
