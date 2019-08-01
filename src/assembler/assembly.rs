@@ -4,6 +4,7 @@ use super::operations;
 use crate::asm::macros;
 use crate::asm::mnemonics;
 use crate::asm::operators;
+use crate::asm::registers;
 use crate::tokenization::tokens;
 use std::collections::HashMap;
 use std::error::Error;
@@ -18,6 +19,7 @@ pub fn extract_tables<'a>(
     let mut current_dw: bool = false;
     let mut current_equ: bool = false;
     let mut current_equ_label: &str = "";
+    let mut current_mnemonic: Option<mnemonics::SspMnemonic> = None;
 
     let (symbols, equs, _) = tokens.iter().fold(
         (
@@ -35,15 +37,17 @@ pub fn extract_tables<'a>(
                     symbols.insert(label, current_address);
                     0
                 }
-                (tokens::Token::Mnemonic(_), Some(tokens::Token::Label(label))) => {
+                (tokens::Token::Mnemonic(mnemonic), Some(tokens::Token::Label(label))) => {
                     current_dw = false;
                     current_org = false;
+                    current_mnemonic = Some(*mnemonic);
                     symbols.insert(label, current_address);
                     1
                 }
                 (tokens::Token::Invalid(_), Some(tokens::Token::Label(label))) => {
                     current_dw = false;
                     current_org = false;
+                    current_mnemonic = None;
                     symbols.insert(label, current_address);
                     0
                 }
@@ -52,12 +56,14 @@ pub fn extract_tables<'a>(
                     current_org = true;
                     current_dw = false;
                     current_equ = false;
+                    current_mnemonic = None;
                     0
                 }
                 (tokens::Token::Macro(macros::SspMacro::Dw), Some(tokens::Token::Label(label))) => {
                     current_org = false;
                     current_dw = true;
                     current_equ = false;
+                    current_mnemonic = None;
                     symbols.insert(label, current_address);
                     0
                 }
@@ -65,6 +71,7 @@ pub fn extract_tables<'a>(
                     current_org = false;
                     current_dw = true;
                     current_equ = false;
+                    current_mnemonic = None;
                     0
                 }
                 (
@@ -74,6 +81,7 @@ pub fn extract_tables<'a>(
                     current_org = false;
                     current_dw = false;
                     current_equ = true;
+                    current_mnemonic = None;
                     current_equ_label = label;
                     0
                 }
@@ -85,6 +93,98 @@ pub fn extract_tables<'a>(
                     ))),
                 ) => {
                     // Special case for LD addr, a
+                    current_mnemonic = None;
+                    0
+                }
+
+                // OP A, addr needs to treat address words as size 1 instruction:
+                (
+                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                        registers::SspGeneralRegister::A,
+                    ))),
+                ) if (current_mnemonic
+                    == Some(mnemonics::SspMnemonic::Sub(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))) =>
+                {
+                    // Special case for OP A, addr
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                        registers::SspGeneralRegister::A,
+                    ))),
+                ) if (current_mnemonic
+                    == Some(mnemonics::SspMnemonic::Cmp(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))) =>
+                {
+                    // Special case for OP A, addr
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                        registers::SspGeneralRegister::A,
+                    ))),
+                ) if (current_mnemonic
+                    == Some(mnemonics::SspMnemonic::Add(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))) =>
+                {
+                    // Special case for OP A, addr
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                        registers::SspGeneralRegister::A,
+                    ))),
+                ) if (current_mnemonic
+                    == Some(mnemonics::SspMnemonic::And(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))) =>
+                {
+                    // Special case for OP A, addr
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                        registers::SspGeneralRegister::A,
+                    ))),
+                ) if (current_mnemonic
+                    == Some(mnemonics::SspMnemonic::Or(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))) =>
+                {
+                    // Special case for OP A, addr
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                        registers::SspGeneralRegister::A,
+                    ))),
+                ) if (current_mnemonic
+                    == Some(mnemonics::SspMnemonic::Eor(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))) =>
+                {
+                    // Special case for OP A, addr
+                    current_mnemonic = None;
                     0
                 }
 
@@ -106,9 +206,10 @@ pub fn extract_tables<'a>(
 
                 (tokens::Token::Operator(operators::SspOperator::LabelRef(_)), _) => 1,
 
-                (tokens::Token::Mnemonic(_), _) => {
+                (tokens::Token::Mnemonic(mnemonic), _) => {
                     current_dw = false;
                     current_org = false;
+                    current_mnemonic = Some(*mnemonic);
                     1
                 }
 
