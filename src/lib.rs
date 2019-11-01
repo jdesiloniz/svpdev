@@ -18,6 +18,7 @@ pub struct Config {
     pub input_filename: String,
     pub output_filename: String,
     pub is_debug: bool,
+    pub is_hex: bool,
 }
 
 impl Config {
@@ -28,10 +29,12 @@ impl Config {
         match (matches.value_of("INPUT"), matches.value_of("OUTPUT")) {
             (Some(input), Some(output)) => {
                 let is_debug = matches.occurrences_of("debug") > 0;
+                let is_hex = matches.occurrences_of("hex") > 0;
                 Ok(Config {
                     input_filename: input.to_string(),
                     output_filename: output.to_string(),
                     is_debug,
+                    is_hex,
                 })
             }
             _ => match App::from_yaml(yaml).print_long_help() {
@@ -48,8 +51,12 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let (symbol_table, equ_table) = assembly::extract_tables(&tokens);
     let opcodes = assembly::generate_opcodes(&tokens, &symbol_table, &equ_table, config.is_debug)?;
 
-    let mut file = File::create(config.output_filename)?;
+    let mut file = File::create(config.output_filename.clone())?;
     file.write_all(&opcodes)?;
+
+    if config.is_hex {
+        write_hex_file(format!("{}.{}", config.output_filename, "hex"), &opcodes)?;
+    }
 
     if config.is_debug {
         print_debug_info(&tokens, &opcodes);
@@ -59,6 +66,31 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     print_table(&symbol_table, "Symbol table");
     println!("");
     print_table(&equ_table, "Constants table");
+
+    Ok(())
+}
+
+pub fn write_hex_file(filename: String, opcodes: &Vec<u8>) -> Result<(), Box<dyn Error>> {
+    let mut hex_file = File::create(filename)?;
+
+    let (data, _, _) =
+        opcodes
+            .iter()
+            .fold((String::new(), u16::min_value(), false), |acc, opcode| {
+                let (result, value, is_lsb) = acc;
+                if !is_lsb {
+                    (result, ((*opcode as u16) << 8), true)
+                } else {
+                    let final_value = format!("{:04x}\n", (value | (*opcode as u16)));
+                    (
+                        format!("{}{}", result, final_value),
+                        u16::min_value(),
+                        false,
+                    )
+                }
+            });
+
+    hex_file.write_all(data.as_bytes())?;
 
     Ok(())
 }

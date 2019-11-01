@@ -16,4 +16,9 @@ args:
         long: debug
         multiple: false
         help: Shows debugging information
+    - hex:
+        short: h
+        long: hex
+        multiple: false
+        help: Writes assembly file in a text file containing 16-bit hex values, in addition to the specified binary file (useful for HDL memory loads)
 subcommands:
