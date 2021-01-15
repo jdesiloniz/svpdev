@@ -12,6 +12,15 @@ ssp16asm source.sc target.o
 
 If everything goes right, after executing the assembler and passing the input source file and the intended target file, you should have an assembled file in few seconds. Otherwise you'll see a list of (more or less informative) errors that can help you fix any issues.
 
+### Optional useful parameters:
+
+- `base_file`: Loads a binary to write the assembled code onto. Useful if the resulting code needs to be combined with code from a different architecture (i.e.: Motorola 68000 code).
+- `fill`: Fills the resulting binary file with 0s until the specified maximum binary size (by default 4MB).
+- `1meg`: Specifies a maximum binary file size of 1MB if `--fill` is in use.
+- `2meg`: Specifies a maximum binary file size of 2MB if `--fill` is in use.
+- `4meg`: Specifies a maximum binary file size of 4MB if `--fill` is in use (if not specified, this is the default maximum binary size). Note: the code is generated using 4MB as a base, and then truncated to the specified size.
+- `hex`: Generates an alternative file containing the resulting code as a list of 16 bit hexadecimal values (to be used as source in HDL designs).
+
 ## Assembly style
 
 This assembler follows most of the terminology used by the sample sources originally provided by Samsung on their website about this DSP family, even though it's incompatible with some other styles around (i.e.: with Virtua Racing's SVP disassemblies, especially regarding register names).
@@ -113,7 +122,6 @@ This was my first real project built in Rust (during my spare time in the span o
 * More intensive testing.
 * DUP assembler macro.
 * Includes somewhere down the line...?
-* Improve binary creation (include dynamic size handling beyond the 128KB limit).
 
 ## Acknowledges
 

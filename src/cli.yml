@@ -35,13 +35,13 @@ args:
     - 1M:
         long: 1meg
         multiple: false
-        help: chooses maximum binary size of 1MB
+        help: chooses maximum binary size of 1MB (to be used with --fill) [defaults to 4M if not specified]
     - 2M:
         long: 2meg
         multiple: false
-        help: chooses maximum binary size of 2MB
+        help: chooses maximum binary size of 2MB (to be used with --fill) [defaults to 4M if not specified]
     - 4M:
         long: 4meg
         multiple: false
-        help: chooses maximum binary size of 4MB
+        help: chooses maximum binary size of 4MB (to be used with --fill) [defaults to 4M if not specified]
 subcommands:
