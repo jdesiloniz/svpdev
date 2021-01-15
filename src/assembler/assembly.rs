@@ -8,8 +8,13 @@ use crate::asm::registers;
 use crate::tokenization::tokens;
 use std::collections::HashMap;
 use std::error::Error;
+use std::fs;
+use std::fs::File;
+use std::io::Read;
 
-const MAX_BINARY_SIZE: u32 = 0x20000;
+const MAX_BINARY_SIZE_1M: u64 = 0x100000;
+const MAX_BINARY_SIZE_2M: u64 = 0x200000;
+const MAX_BINARY_SIZE_4M: u64 = 0x400000;
 
 pub fn extract_tables<'a>(
     tokens: &Vec<tokens::Token<'a>>,
@@ -233,16 +238,37 @@ pub fn generate_opcodes<'a>(
     symbols: &'a HashMap<&'a str, u16>,
     equs: &'a HashMap<&'a str, u16>,
     show_debug: bool,
+    input_base_rom: Option<String>,
+    should_fill: bool,
+    max_binary_size_in_megs: u8,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut binary: Vec<u8> = [0; MAX_BINARY_SIZE as usize].to_vec();
+    let mut binary: Vec<u8> = if let Some(ref base_file_path) = input_base_rom {
+        let mut file = File::open(&base_file_path).expect("input base file not found");
+        let metadata = fs::metadata(&base_file_path).expect("unable to read base file metadata");
+        let file_size = metadata.len();
 
-    let mut current_address: u32 = 0;
+        if file_size > (max_binary_size_in_megs as u64) * 0x100000 {
+            return Err(Box::new(errors::AssemblyError(
+                "Exceeded max binary size.".to_string(),
+            )));
+        }
+
+        let mut buffer = vec![0; metadata.len() as usize];
+        file.read(&mut buffer).expect("buffer overflow");
+        buffer.resize(MAX_BINARY_SIZE_4M as usize, 0);
+
+        buffer
+    } else {
+        [0; MAX_BINARY_SIZE_4M as usize].to_vec()
+    };
+
+    let mut current_address: u64 = 0;
     let mut current_operation: Option<operations::Operation> = None;
     let mut errors: Vec<errors::AssemblyError> = Vec::new();
-    let mut max_address: u32 = 0;
+    let mut max_address: u64 = 0;
 
     for token in tokens.iter() {
-        if max_address > MAX_BINARY_SIZE {
+        if max_address > max_binary_size_in_megs as u64 * 0x100000 {
             return Err(Box::new(errors::AssemblyError(
                 "Exceeded max binary size.".to_string(),
             )));
@@ -288,7 +314,7 @@ pub fn generate_opcodes<'a>(
                 tokens::Token::Operator(operators::SspOperator::Word(value)),
             ) => {
                 current_operation = None;
-                current_address = *value as u32 * 2;
+                current_address = *value as u64 * 2;
             }
 
             // Equ macro
@@ -374,7 +400,23 @@ pub fn generate_opcodes<'a>(
         }
     }
 
-    binary.resize(max_address as usize, 0);
+    if !should_fill {
+        if let Some(ref base_file_path) = input_base_rom {
+            let metadata =
+                fs::metadata(&base_file_path).expect("unable to read base file metadata");
+            let file_size = metadata.len();
+
+            binary.resize(file_size as usize, 0);
+        } else {
+            binary.resize(max_address as usize, 0);
+        }
+    } else {
+        match max_binary_size_in_megs {
+            1 => binary.resize(MAX_BINARY_SIZE_1M as usize, 0),
+            2 => binary.resize(MAX_BINARY_SIZE_2M as usize, 0),
+            _ => binary.resize(MAX_BINARY_SIZE_4M as usize, 0),
+        }
+    }
 
     if errors.is_empty() {
         Ok(binary)

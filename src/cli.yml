@@ -21,4 +21,27 @@ args:
         long: hex
         multiple: false
         help: Writes assembly file in a text file containing 16-bit hex values, in addition to the specified binary file (useful for HDL memory loads)
+    - base:
+        short: b
+        long: base_file
+        multiple: false
+        takes_value: true
+        help: Use an input file as a base and writes on top generated opcodes (i.e. to combine SSP16 code with M68K code)
+    - fill:
+        short: f
+        long: fill
+        multiple: false
+        help: Fills resulting binary file with 0s (until a maximum binary size of 1MB, 2MB or 4MB)
+    - 1M:
+        long: 1meg
+        multiple: false
+        help: chooses maximum binary size of 1MB
+    - 2M:
+        long: 2meg
+        multiple: false
+        help: chooses maximum binary size of 2MB
+    - 4M:
+        long: 4meg
+        multiple: false
+        help: chooses maximum binary size of 4MB
 subcommands:
