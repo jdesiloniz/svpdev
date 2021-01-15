@@ -19,6 +19,9 @@ pub struct Config {
     pub output_filename: String,
     pub is_debug: bool,
     pub is_hex: bool,
+    pub input_base_rom: Option<String>,
+    pub should_fill: bool,
+    pub max_binary_size_in_megs: u8,
 }
 
 impl Config {
@@ -30,11 +33,25 @@ impl Config {
             (Some(input), Some(output)) => {
                 let is_debug = matches.occurrences_of("debug") > 0;
                 let is_hex = matches.occurrences_of("hex") > 0;
+                let should_fill = matches.occurrences_of("fill") > 0;
+                let input_base_rom = matches.value_of("base").map(|b| b.to_string());
+
+                let max_binary_size_in_megs = if matches.occurrences_of("1M") > 0 {
+                    1
+                } else if matches.occurrences_of("2M") > 0 {
+                    2
+                } else {
+                    4
+                };
+
                 Ok(Config {
                     input_filename: input.to_string(),
                     output_filename: output.to_string(),
                     is_debug,
                     is_hex,
+                    input_base_rom: input_base_rom,
+                    should_fill: should_fill,
+                    max_binary_size_in_megs: max_binary_size_in_megs,
                 })
             }
             _ => match App::from_yaml(yaml).print_long_help() {
@@ -49,7 +66,15 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let tokens = tokens::tokenize(contents.as_str())?;
 
     let (symbol_table, equ_table) = assembly::extract_tables(&tokens);
-    let opcodes = assembly::generate_opcodes(&tokens, &symbol_table, &equ_table, config.is_debug)?;
+    let opcodes = assembly::generate_opcodes(
+        &tokens,
+        &symbol_table,
+        &equ_table,
+        config.is_debug,
+        config.input_base_rom,
+        config.should_fill,
+        config.max_binary_size_in_megs,
+    )?;
 
     let mut file = File::create(config.output_filename.clone())?;
     file.write_all(&opcodes)?;
