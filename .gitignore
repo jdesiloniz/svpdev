@@ -1,5 +1,7 @@
-/target/
+ssp16asm/target/
+svptool/target/
 Cargo.lock
 **/*.rs.bk
 *.o
 *.sc
+DS_Store
