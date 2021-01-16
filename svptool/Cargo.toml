@@ -1,0 +1,8 @@
+[package]
+name = "svptool"
+version = "0.1.0"
+authors = ["Javier de Siloniz Sandino"]
+edition = "2018"
+
+[dependencies]
+clap = {version = "2.33", features = ["yaml"]}
