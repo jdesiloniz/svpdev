@@ -12,6 +12,7 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::fmt;
 use tokenization::tokens;
 
 pub struct Config {
@@ -65,11 +66,12 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.input_filename)?;
     let tokens = tokens::tokenize(contents.as_str())?;
 
-    let (symbol_table, equ_table) = assembly::extract_tables(&tokens);
+    let (symbol_table, equ_table, equb_table) = assembly::extract_tables(&tokens);
     let opcodes = assembly::generate_opcodes(
         &tokens,
         &symbol_table,
         &equ_table,
+        &equb_table,
         config.is_debug,
         config.input_base_rom,
         config.should_fill,
@@ -90,7 +92,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     println!("");
     print_table(&symbol_table, "Symbol table");
     println!("");
-    print_table(&equ_table, "Constants table");
+    print_table(&equ_table, "Word constants table");
+    print_table(&equb_table, "Byte constants table");
 
     Ok(())
 }
@@ -120,7 +123,7 @@ pub fn write_hex_file(filename: String, opcodes: &Vec<u8>) -> Result<(), Box<dyn
     Ok(())
 }
 
-pub fn print_table<'a>(table: &HashMap<&'a str, u16>, title: &str) {
+pub fn print_table<'a, T: fmt::UpperHex>(table: &HashMap<&'a str, T>, title: &str) {
     if table.len() > 0 {
         println!("**** {} ****", title);
         table

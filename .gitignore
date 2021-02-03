@@ -4,4 +4,6 @@ Cargo.lock
 **/*.rs.bk
 *.o
 *.sc
-DS_Store
+.DS_Store
+*.bin
+*.dat

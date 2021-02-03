@@ -18,22 +18,24 @@ const MAX_BINARY_SIZE_4M: u64 = 0x400000;
 
 pub fn extract_tables<'a>(
     tokens: &Vec<tokens::Token<'a>>,
-) -> (HashMap<&'a str, u16>, HashMap<&'a str, u16>) {
+) -> (HashMap<&'a str, u16>, HashMap<&'a str, u16>, HashMap<&'a str, u8>) {
     let mut current_address: u16 = 0;
     let mut current_org: bool = false;
     let mut current_dw: bool = false;
     let mut current_equ: bool = false;
+    let mut current_equb: bool = false;
     let mut current_equ_label: &str = "";
     let mut current_mnemonic: Option<mnemonics::SspMnemonic> = None;
 
-    let (symbols, equs, _) = tokens.iter().fold(
+    let (symbols, equs, equbs, _) = tokens.iter().fold(
         (
             HashMap::<&'a str, u16>::new(),
             HashMap::<&'a str, u16>::new(),
+            HashMap::<&'a str, u8>::new(),
             None::<tokens::Token>,
         ),
         |acc, token| {
-            let (mut symbols, mut equs, prev_token) = acc;
+            let (mut symbols, mut equs, mut equbs, prev_token) = acc;
 
             let size = match (token, prev_token) {
                 (tokens::Token::Operator(_), Some(tokens::Token::Label(label))) => {
@@ -61,6 +63,7 @@ pub fn extract_tables<'a>(
                     current_org = true;
                     current_dw = false;
                     current_equ = false;
+                    current_equb = false;
                     current_mnemonic = None;
                     0
                 }
@@ -68,6 +71,7 @@ pub fn extract_tables<'a>(
                     current_org = false;
                     current_dw = true;
                     current_equ = false;
+                    current_equb = false;
                     current_mnemonic = None;
                     symbols.insert(label, current_address);
                     0
@@ -76,6 +80,7 @@ pub fn extract_tables<'a>(
                     current_org = false;
                     current_dw = true;
                     current_equ = false;
+                    current_equb = false;
                     current_mnemonic = None;
                     0
                 }
@@ -86,6 +91,20 @@ pub fn extract_tables<'a>(
                     current_org = false;
                     current_dw = false;
                     current_equ = true;
+                    current_equb = false;
+                    current_mnemonic = None;
+                    current_equ_label = label;
+                    0
+                }
+
+                (
+                    tokens::Token::Macro(macros::SspMacro::Equb),
+                    Some(tokens::Token::Label(label)),
+                ) => {
+                    current_org = false;
+                    current_dw = false;
+                    current_equ = false;
+                    current_equb = true;
                     current_mnemonic = None;
                     current_equ_label = label;
                     0
@@ -209,6 +228,17 @@ pub fn extract_tables<'a>(
                     }
                 }
 
+                (tokens::Token::Operator(operators::SspOperator::Byte(value)), _) => {
+                    // Dealing with EQUB
+                    if current_equb {
+                        equbs.insert(current_equ_label, *value);
+                        current_equb = false;
+                        0
+                    } else {
+                        1
+                    }
+                }
+
                 (tokens::Token::Operator(operators::SspOperator::LabelRef(_)), _) => 1,
 
                 (tokens::Token::Mnemonic(mnemonic), _) => {
@@ -227,16 +257,17 @@ pub fn extract_tables<'a>(
 
             current_address += size;
 
-            (symbols, equs, Some(*token))
+            (symbols, equs, equbs, Some(*token))
         },
     );
-    (symbols, equs)
+    (symbols, equs, equbs)
 }
 
 pub fn generate_opcodes<'a>(
     tokens: &Vec<tokens::Token<'a>>,
     symbols: &'a HashMap<&'a str, u16>,
     equs: &'a HashMap<&'a str, u16>,
+    equbs: &'a HashMap<&'a str, u8>,
     show_debug: bool,
     input_base_rom: Option<String>,
     should_fill: bool,
@@ -293,6 +324,14 @@ pub fn generate_opcodes<'a>(
                     .unwrap_or_else(|| proper_token)
             }
 
+            tokens::Token::Operator(operators::SspOperator::LabelRef(label))
+                if equbs.contains_key(label) =>
+            {
+                equbs.get(label)
+                    .map(|value| tokens::Token::Operator(operators::SspOperator::Byte(*value)))
+                    .unwrap_or_else(|| proper_token)
+            }
+
             _ => proper_token,
         };
 
@@ -321,6 +360,14 @@ pub fn generate_opcodes<'a>(
             (
                 Some(operations::Operation::Macro(macros::SspMacro::Equ)),
                 tokens::Token::Operator(operators::SspOperator::Word(_)),
+            ) => {
+                current_operation = None;
+            }
+
+            // Equb macro
+            (
+                Some(operations::Operation::Macro(macros::SspMacro::Equb)),
+                tokens::Token::Operator(operators::SspOperator::Byte(_)),
             ) => {
                 current_operation = None;
             }

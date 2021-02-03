@@ -3,6 +3,7 @@ pub enum SspMacro {
     Dw,
     Org,
     Equ,
+    Equb
 }
 
 impl SspMacro {
@@ -11,6 +12,7 @@ impl SspMacro {
             "dw" => Some(SspMacro::Dw),
             "org" => Some(SspMacro::Org),
             "equ" => Some(SspMacro::Equ),
+            "equb" => Some(SspMacro::Equb),
             _ => None,
         }
     }
@@ -25,6 +27,7 @@ mod macros_tests {
         assert_eq!(SspMacro::new("dw"), Some(SspMacro::Dw));
         assert_eq!(SspMacro::new("org"), Some(SspMacro::Org));
         assert_eq!(SspMacro::new("equ"), Some(SspMacro::Equ));
+        assert_eq!(SspMacro::new("equb"), Some(SspMacro::Equb));
     }
 
     #[test]

@@ -98,7 +98,8 @@ A few of the typical assembler directives have been implemented:
 
 * `ORG`: sets the current address to assemble to.
 * `DW`: writes a word in the assembled file. Supports multiple words with a single macro.
-* `EQU`: ties a constant value to a label (i.e.: `constant_label: EQU 00FF`). Supports word-sized constants.
+* `EQU`: ties a word-sized constant value to a label (i.e.: `constant_label: EQU 00FF`).
+* `EQUB`: ties a byte-sized constant value to a label (i.e.: `constant_label: EQU FF`).
 
 ### Labels
 
