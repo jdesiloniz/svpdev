@@ -54,7 +54,11 @@ There's only one load opcode (`LD`). As with the arithmetic instructions, `LD` c
 * `LDI A, 0009`.
 * `LDI A, 8080`.
 
-But some of the instructions require a word, i.e.:
+Except when the other operand is a byte register:
+
+* `LDI R0, 0F`.
+
+There's a special case: `LDI addr, value` referring to a bank memory address (byte-size address) requires a word, i.e.:
 
 * `LDI addr, A` (i.e.: `LDI 1FF, A` - the 9th bit of the word is used to determine which RAM bank the address refers to).
 
@@ -62,9 +66,11 @@ But some of the instructions require a word, i.e.:
 
 This family of DSPs provides multiple instructions for multiplication and addition/substraction operations, all using pointer registers as operands:
 
-* `MLD (RX), (RY)` (i.e.: `MLD (R0+!), (R4+)`).
-* `MPYA (RX), (RY)` (i.e.: `MPYA (R2), (R5+)`).
-* `MPYS (RX), (RY)` (i.e.: `MPYS (R0-!), (R4)`).
+* `MLD (RX), (RY)` (i.e.: `MLD (R4+!), (R0+)`).
+* `MPYA (RX), (RY)` (i.e.: `MPYA (R5), (R2+)`).
+* `MPYS (RX), (RY)` (i.e.: `MPYS (R4!), (R0-)`).
+
+Note that the pointer registers used as operands to define where in memory are the operands should always be in that order (RAM bank B/RAM bank A). Both operands can't be in the same RAM bank.
 
 ### Registers
 
