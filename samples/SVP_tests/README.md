@@ -20,7 +20,7 @@ You can assemble the M68000 part of this sample with `SNASM68K.EXE`:
 
 ### Samsung SSP160x
 
-The Motorola 68000 part of the binary needs to be later fed up to the [SSP16xx assembler](https://github.com/jdesiloniz/svpdev/tools/ssp16asm) in order to build the SVP part of the code on top of it. To assemble the SVP part and generate the final ROM:
+The Motorola 68000 part of the binary needs to be later fed up to the [SSP16xx assembler](../../tools/ssp16asm) in order to build the SVP part of the code on top of it. To assemble the SVP part and generate the final ROM:
 
 `ssp16asm -b output.bin tests.svp rom_svp.bin`
 
