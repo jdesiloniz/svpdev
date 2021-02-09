@@ -229,14 +229,11 @@ pub fn extract_tables<'a>(
                 }
 
                 (tokens::Token::Operator(operators::SspOperator::Byte(value)), _) => {
-                    // Dealing with EQUB
                     if current_equb {
                         equbs.insert(current_equ_label, *value);
                         current_equb = false;
-                        0
-                    } else {
-                        1
                     }
+                    0
                 }
 
                 (tokens::Token::Operator(operators::SspOperator::LabelRef(_)), _) => 1,
@@ -330,7 +327,7 @@ pub fn generate_opcodes<'a>(
                 equbs.get(label)
                     .map(|value| tokens::Token::Operator(operators::SspOperator::Byte(*value)))
                     .unwrap_or_else(|| proper_token)
-            }
+            }   
 
             _ => proper_token,
         };

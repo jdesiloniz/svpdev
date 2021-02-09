@@ -1,19 +1,22 @@
-# ssp16asm
+# SVP Development Tools
 
-A quick and dirty assembler for the Samsung SSP16xx family of DSPs, notably known for its use (under the disguised name of _SVP_ - *Sega Virtua Processor*) in the Mega Drive/Genesis version of the game *Virtua Racing*.
+A collection of development tools targetting SEGA's SVP chip found in the Mega Drive/Genesis version of Virtua Racing.
 
-## Assembler
+## Project structure
 
-Further documentation for the assembler can be found in the [assembler source folder](./ssp16asm).
+- **boards**: (to be released) KiCAD format files of boards that allow running custom code on an actual SVP chip.
+- **samples**: simple examples containing both DSP/68000 code to help developers not to start from scratch.
+- **tools**: (kinda crude) tools to create software for the SVP, containing an SSP160x assembler and a ROM file manipulation tool.
 
-## SVPTOOL
+## Goals
 
-An additional tool is available in the [svptool](./svptool) folder. It allows to swap the endianness and split the resulting assembled files so that they can be stored in multiple EEPROMs and be run in real hardware. Even though it's named that way I guess this can be used for any kind of binary files as long as they're 16 bit in nature.
+- Be able to run arbitrary code on the real SVP chip in order to research many unknowns in its behavior, and document these.
+- Allow an "easy" access for people interested in this piece of videogame history to run code on it too, whether it's additional research, demos or actual new games (looking forward to it!).
 
 ## License
 
 This code is MIT-licensed. Also take into account the following conditions of use:
 
-* Please use this code for good. Also for fun. But good fun, not evil fun.
-* If you build something really cool (moderately cool also works) please drop me a comment at `taiyou[at]gmail.com`.
-* You're not forced, but if you use this code I'd appreciate if you could acknowledge me :).
+* Please use these tools for good. Also for fun. But good fun, not evil fun. 
+* If you build something really cool (moderately cool also works for me) please drop a comment at `taiyou[at]gmail.com`.
+* You're not forced, but if you use these code/tools I'd appreciate if you could acknowledge me :).

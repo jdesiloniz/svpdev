@@ -1,9 +1,12 @@
-ssp16asm/target/
-svptool/target/
+tools/ssp16asm/target/
+tools/svptool/target/
 Cargo.lock
 **/*.rs.bk
 *.o
 *.sc
 .DS_Store
 *.bin
+!samples/SVP_basic_gfx/rom/rom_svp.bin
+!samples/SVP_tests/rom/rom_svp.bin
+*.bin.hex
 *.dat

@@ -1,0 +1,35 @@
+# SSP1601 tests
+
+org 400
+
+TestBasicCommId:                EQU 0x0100
+
+TestBasicCommSuccessResult:     EQU 0xFFAA
+
+test_init:				eor a, a
+                        ldi st, 0x0000
+
+wait_for_megadrive:     
+                        ld a, ext0
+                        andi 0x2                        # Check if bit 1 is active (MD has written into XST)
+                        bra z=1, @wait_for_megadrive
+                        ld x, ext3                      # Read test number written by MD
+                        ld a, x
+                        cmpi a, @TestBasicCommId
+                        bra z=1, @TestBasicComm
+                        bra z=0, @CommError
+                        
+TestBasicComm:          
+				ldi st, 0030		# Set ST5/ST6 bits so PMs can act like that
+				ldi ext6, 0000		# Load address part1 for 0x180000
+				ldi ext6, 0018		# Load address part2 for 0x180000, no modifiers
+				ld ext0, -			# Programming PM0 for writes
+				ldi ext0, FFAA		# Writing 0xFFAA to 0x180000
+
+                ldi st, 0000                            # Make EXT3 behave as XST again
+                ldi ext3, 1010                          # Confirm write to Mega Drive side
+                bra always, @TestEnd
+
+CommError:              bra always, @CommError
+TestEnd:                bra always, @TestEnd
+

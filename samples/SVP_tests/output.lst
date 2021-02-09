@@ -1,0 +1,1242 @@
+00000000                            ;**************************************************************
+00000000                            ; SVP Tests
+00000000                            ;**************************************************************
+00000000                            ; by Javi Taiyou
+00000000                            ;**************************************************************
+00000000                            ; This sample is a way to run basic code tests on the SVP
+00000000                            ; in order to find out more about its behavior.
+00000000                            ;
+00000000                            ; This is WIP at this moment and just performs a basic comms check.
+00000000                            ;
+00000000                            ; You can assemble the M68000 part of this sample with `SNASM68K.EXE`:
+00000000                            ;
+00000000                            ;    SNASM68K.EXE /p main.asm,main.map,main.lst,output.bin
+00000000                            ;
+00000000                            ; main.asm = this source file
+00000000                            ; output.bin = Mega Drive/Genesis part of this ROM, to be later used by the SSP16xx (SVP) assembler.
+00000000                            ; main.lst = listing file, shows assembled addresses alongside your source code (useful for debugging).
+00000000                            ; main.map = symbol map file for linking (unused)
+00000000                            ;
+00000000                            ; The M68000 part of the binary needs to be later fed up to the SSP16xx assembler to build
+00000000                            ; the SVP part of the code on top of it. You can download it from: 
+00000000                            ;
+00000000                            ; https://github.com/jdesiloniz/svpdev/tools/ssp16asm
+00000000                            ;
+00000000                            ; To assemble the SVP part and generate the final ROM:
+00000000                            ;
+00000000                            ; ssp16asm -b output.bin svp_gfx.svp rom_svp.bin
+00000000                            ;
+00000000                            ; svp_gfx.svp = source containing the SVP part of this sample.
+00000000                            ; output.bin = M68000 binary file.
+00000000                            ; rom_svp.bin = final ROM containing both M68000 and SSP16xx code to be run on hardware
+00000000                            ; 				or emulators that support SVP emulation!
+00000000                            ;
+00000000                            
+00000000                            ;**************************************************************
+00000000                            ; ACKNOWLEDGEMENT
+00000000                            ;**************************************************************
+00000000                            ;
+00000000                            ; Many parts in the M68000 side of this sample are based on the work of other developers in 
+00000000                            ; the Mega Drive/Genesis scene, specially the following samples by Matt Phillips/BigEvilCorporation:
+00000000                            ;
+00000000                            ; https://github.com/BigEvilCorporation/megadrive_samples/
+00000000                            ;
+00000000                            ; The amazing technical documentation found in the Plutiedev site were a big help too: https://plutiedev.com/
+00000000                            ; 
+00000000                            ; Finally the reverse engineering on the SVP originally made by Tasco Deluxe and Grazvydas Ignotas (notaz),
+00000000                            ; which obviously helped a lot for the development of the SSP16xx assembler, and the understanding of its behavior.
+00000000                            
+00000000                            ;**************************************************************
+00000000                            ; INCLUDES
+00000000                            ;**************************************************************
+00000000                            ; Constants + routines.
+00000000                            ; Warning: this section shouldn't ever exceed 0x800 bytes
+00000000                            ; SVP will try to access 0x800 as its own entry point, so ROM
+00000000                            ; space between 0x800-0x1FFFF should be left out for SVP code.
+00000000                            ;**************************************************************
+00000000                            
+00000000                            	include 'init.asm'			; ROM header and initialization routines
+00000000                            ; A label defining the start of ROM so we can compute the total size.
+00000000                            ROM_Start:
+00000000                            
+00000000                            ;==============================================================
+00000000                            ; CPU VECTOR TABLE
+00000000                            ;==============================================================
+00000000                            ; A table of addresses that the CPU needs to know about -
+00000000                            ; things like stack address, "main()" function address,
+00000000                            ; vertical/horizontal interrupt addresses, etc.
+00000000                            ;==============================================================
+00000000                            ; For any interrupts we don't want to handle in this demo,
+00000000                            ; we specify INT_Null (an interrupt at the bottom of the
+00000000                            ; file that doesn't do anything).
+00000000                            ;==============================================================
+00000000                            ; This must be the very first thing in the ROM, since the CPU
+00000000                            ; reads it from 0x0000 on bootup.
+00000000                            ;==============================================================
+00000000 00FF E000                  	dc.l   0x00FFE000			; Initial stack pointer value
+00000004 0000 0000                  	dc.l   CPU_EntryPoint		; Start of program
+00000008 0000 0000                  	dc.l   CPU_Exception 		; Bus error
+0000000C 0000 0000                  	dc.l   CPU_Exception 		; Address error
+00000010 0000 0000                  	dc.l   CPU_Exception 		; Illegal instruction
+00000014 0000 0000                  	dc.l   CPU_Exception 		; Division by zero
+00000018 0000 0000                  	dc.l   CPU_Exception 		; CHK CPU_Exception
+0000001C 0000 0000                  	dc.l   CPU_Exception 		; TRAPV CPU_Exception
+00000020 0000 0000                  	dc.l   CPU_Exception 		; Privilege violation
+00000024 0000 0000                  	dc.l   INT_Null				; TRACE exception
+00000028 0000 0000                  	dc.l   INT_Null				; Line-A emulator
+0000002C 0000 0000                  	dc.l   INT_Null				; Line-F emulator
+00000030 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000034 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000038 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+0000003C 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000040 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000044 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000048 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+0000004C 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000050 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000054 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000058 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+0000005C 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000060 0000 0000                  	dc.l   INT_Null				; Spurious exception
+00000064 0000 0000                  	dc.l   INT_Null				; IRQ level 1
+00000068 0000 0000                  	dc.l   INT_Null				; IRQ level 2
+0000006C 0000 0000                  	dc.l   INT_Null				; IRQ level 3
+00000070 0000 0000                  	dc.l   INT_HInterrupt		; IRQ level 4 (horizontal retrace interrupt)
+00000074 0000 0000                  	dc.l   INT_Null  			; IRQ level 5
+00000078 0000 0000                  	dc.l   INT_VInterrupt		; IRQ level 6 (vertical retrace interrupt)
+0000007C 0000 0000                  	dc.l   INT_Null				; IRQ level 7
+00000080 0000 0000                  	dc.l   INT_Null				; TRAP #00 exception
+00000084 0000 0000                  	dc.l   INT_Null				; TRAP #01 exception
+00000088 0000 0000                  	dc.l   INT_Null				; TRAP #02 exception
+0000008C 0000 0000                  	dc.l   INT_Null				; TRAP #03 exception
+00000090 0000 0000                  	dc.l   INT_Null				; TRAP #04 exception
+00000094 0000 0000                  	dc.l   INT_Null				; TRAP #05 exception
+00000098 0000 0000                  	dc.l   INT_Null				; TRAP #06 exception
+0000009C 0000 0000                  	dc.l   INT_Null				; TRAP #07 exception
+000000A0 0000 0000                  	dc.l   INT_Null				; TRAP #08 exception
+000000A4 0000 0000                  	dc.l   INT_Null				; TRAP #09 exception
+000000A8 0000 0000                  	dc.l   INT_Null				; TRAP #10 exception
+000000AC 0000 0000                  	dc.l   INT_Null				; TRAP #11 exception
+000000B0 0000 0000                  	dc.l   INT_Null				; TRAP #12 exception
+000000B4 0000 0000                  	dc.l   INT_Null				; TRAP #13 exception
+000000B8 0000 0000                  	dc.l   INT_Null				; TRAP #14 exception
+000000BC 0000 0000                  	dc.l   INT_Null				; TRAP #15 exception
+000000C0 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000C4 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000C8 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000CC 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000D0 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000D4 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000D8 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000DC 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000E0 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000E4 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000E8 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000EC 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000F0 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000F4 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000F8 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+000000FC 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
+00000100                            	
+00000100                            ;==============================================================
+00000100                            ; SEGA MEGA DRIVE ROM HEADER
+00000100                            ;==============================================================
+00000100                            ; A structure that specifies some metadata about the ROM, like
+00000100                            ; its name, author, version number, release date, region,
+00000100                            ; and any special peripherals used.
+00000100                            ; Note that the Mega Drive console itself doesn't read any of
+00000100                            ; this, it's more a convenience for the programmer, but
+00000100                            ; most emulators will read the title and region.
+00000100                            ;==============================================================
+00000100                            ; If your emulator doesn't show the correct ROM name, then this
+00000100                            ; table is in the wrong place or in the wrong format.
+00000100                            ;==============================================================
+00000100 5345 4741 204D 4547 4120+  	dc.b "SEGA MEGA DRIVE "                                 ; Console name
+00000110 4A61 7669 2054 6169 796F+  	dc.b "Javi Taiyou     "                                 ; Copyright holder and release date
+00000120 5356 5020 524F 4D20 5445+  	dc.b "SVP ROM TEST                                    " ; Domestic name
+00000150 5356 5020 524F 4D20 5445+  	dc.b "SVP ROM TEST                                    " ; International name
+00000180 474D 204D 4B2D 3132 3239+  	dc.b "GM MK-1229 -00"                                   ; Version number - need to use the original from Virtua Racing for compatibility with MiSTer
+0000018E 0000                       	dc.w 0x0000                                             ; Checksum
+00000190 4A20 2020 2020 2020 2020+  	dc.b "J               "                                 ; I/O support
+000001A0 0000 0000                  	dc.l ROM_Start                                          ; Start address of ROM
+000001A4 0000 0000                  	dc.l ROM_End-1                                          ; End address of ROM
+000001A8 00FF 0000                  	dc.l 0x00FF0000                                         ; Start address of RAM
+000001AC 00FF FFFF                  	dc.l 0x00FF0000+0x0000FFFF                              ; End address of RAM
+000001B0 0000 0000                  	dc.l 0x00000000                                         ; SRAM enabled
+000001B4 0000 0000                  	dc.l 0x00000000                                         ; Unused
+000001B8 0000 0000                  	dc.l 0x00000000                                         ; Start address of SRAM
+000001BC 0000 0000                  	dc.l 0x00000000                                         ; End address of SRAM
+000001C0 0000 0000                  	dc.l 0x00000000                                         ; Unused
+000001C4 0000 0000                  	dc.l 0x00000000                                         ; Unused
+000001C8 5356 0000                  	dc.l 0x53560000											; Virtua Racing ROM header has some notes, KEGA uses these to detect SVP:
+000001CC 2000 0400                  	dc.l 0x20000400
+000001D0 2020 2020                  	dc.l 0x20202020
+000001D4 2020 2020                  	dc.l 0x20202020
+000001D8 2020 2020                  	dc.l 0x20202020
+000001DC 2020 2020                  	dc.l 0x20202020
+000001E0 2020 2020                  	dc.l 0x20202020
+000001E4 2020 2020                  	dc.l 0x20202020
+000001E8 2020 2020                  	dc.l 0x20202020
+000001EC 2020 2020                  	dc.l 0x20202020
+000001F0 2020 4520 2020 2020 2020+  	dc.b "  E             "                                 ; Country codes
+000001F0 2020 4520 2020 2020 2020+  	dc.b "  E             "                                 ; Country codes
+00000200                            	include 'constants.asm'		; Constants
+00000200                            ;***********
+00000200                            ; CONSTANTS
+00000200                            ;***********
+00000200                            ; Defines names for commonly used values and addresses to make
+00000200                            ; the code more readable.
+00000200                            ;**************************************************************
+00000200                            
+00000200                            ;*****************************
+00000200                            ; INITIAL VDP REGISTER VALUES
+00000200                            ;*****************************
+00000200                            ; 24 register values to be copied to the VDP during initialisation.
+00000200                            ; These specify things like initial width/height of the planes,
+00000200                            ; addresses within VRAM to find scroll/sprite data, the
+00000200                            ; background palette/colour index, whether or not the display
+00000200                            ; is on, and clears initial values for things like DMA.
+00000200                            ;==============================================================
+00000200                            VDPRegisters:
+00000200 14                         	dc.b 0x14 ; 0x00:  H interrupt on, palettes on
+00000201 74                         	dc.b 0x74 ; 0x01:  V interrupt on, display on, DMA on, Genesis mode on
+00000202 30                         	dc.b 0x30 ; 0x02:  Pattern table for Scroll Plane A at VRAM 0xC000 (bits 3-5 = bits 13-15)
+00000203 00                         	dc.b 0x00 ; 0x03:  Pattern table for Window Plane at VRAM 0x0000 (disabled) (bits 1-5 = bits 11-15)
+00000204 07                         	dc.b 0x07 ; 0x04:  Pattern table for Scroll Plane B at VRAM 0xE000 (bits 0-2 = bits 11-15)
+00000205 78                         	dc.b 0x78 ; 0x05:  Sprite table at VRAM 0xF000 (bits 0-6 = bits 9-15)
+00000206 00                         	dc.b 0x00 ; 0x06:  Unused
+00000207 00                         	dc.b 0x00 ; 0x07:  Background colour: bits 0-3 = colour, bits 4-5 = palette
+00000208 00                         	dc.b 0x00 ; 0x08:  Unused
+00000209 00                         	dc.b 0x00 ; 0x09:  Unused
+0000020A 08                         	dc.b 0x08 ; 0x0A: Frequency of Horiz. interrupt in Rasters (number of lines travelled by the beam)
+0000020B 00                         	dc.b 0x00 ; 0x0B: External interrupts off, V scroll per-page, H scroll per-page
+0000020C 81                         	dc.b 0x81 ; 0x0C: Shadows and highlights off, interlace off, H40 mode (320 x 224 screen res)
+0000020D 3F                         	dc.b 0x3F ; 0x0D: Horiz. scroll table at VRAM 0xFC00 (bits 0-5)
+0000020E 00                         	dc.b 0x00 ; 0x0E: Unused
+0000020F 02                         	dc.b 0x02 ; 0x0F: Autoincrement 2 bytes
+00000210 01                         	dc.b 0x01 ; 0x10: Scroll plane size: 64x32 tiles
+00000211 00                         	dc.b 0x00 ; 0x11: Window Plane X pos 0 left (pos in bits 0-4, left/right in bit 7)
+00000212 00                         	dc.b 0x00 ; 0x12: Window Plane Y pos 0 up (pos in bits 0-4, up/down in bit 7)
+00000213 FF                         	dc.b 0xFF ; 0x13: DMA length lo byte
+00000214 FF                         	dc.b 0xFF ; 0x14: DMA length hi byte
+00000215 00                         	dc.b 0x00 ; 0x15: DMA source address lo byte
+00000216 00                         	dc.b 0x00 ; 0x16: DMA source address mid byte
+00000217 80                         	dc.b 0x80 ; 0x17: DMA source address hi byte, memory-to-VRAM mode (bits 6-7)
+00000218                            	
+00000218                            	even
+00000218                            
+00000218                            ; VDP port addresses
+00000218 =00C00004                  vdp_control				equ 0x00C00004
+00000218 =00C00000                  vdp_data				equ 0x00C00000
+00000218                            
+00000218                            ; VDP commands
+00000218 =40000000                  vdp_cmd_vram_write		equ 0x40000000
+00000218 =C0000000                  vdp_cmd_cram_write		equ 0xC0000000
+00000218 =40000010                  vdp_cmd_vsram_write		equ 0x40000010	; NEW to this demo - Vertical Scroll RAM address
+00000218                            
+00000218                            ; VDP memory addresses
+00000218                            ; according to VDP registers 0x2, 0x4, and 0xD (see table above)
+00000218 =00000000                  vram_addr_tiles			equ 0x0000
+00000218 =0000C000                  vram_addr_plane_a		equ 0xC000
+00000218 =0000E000                  vram_addr_plane_b		equ 0xE000
+00000218                            
+00000218                            ; Screen width and height (in pixels)
+00000218 =00000140                  vdp_screen_width		equ 0x0140
+00000218 =000000F0                  vdp_screen_height		equ 0x00F0
+00000218                            
+00000218                            ; The plane width and height (in tiles)
+00000218                            ; according to VDP register 0x10 (see table above)
+00000218 =00000040                  vdp_plane_width			equ 0x40
+00000218 =00000020                  vdp_plane_height		equ 0x20
+00000218                            
+00000218                            ; VDP register commands to handle DMA:
+00000218 =00009300                  vdpreg_dmalen_l  		equ 0x9300  ; DMA length (low)
+00000218 =00009400                  vdpreg_dmalen_h  		equ 0x9400  ; DMA length (high)
+00000218 =00009500                  vdpreg_dmasrc_l			equ 0x9500  ; DMA source (low)
+00000218 =00009600                  vdpreg_dmasrc_m			equ 0x9600  ; DMA source (mid)
+00000218 =00009700                  vdpreg_dmasrc_h			equ 0x9700  ; DMA source (high)
+00000218 =40000080                  vram_dma_cmd   			equ 0x40000080
+00000218 =C0000080                  cram_dma_cmd  			equ 0xC0000080
+00000218 =40000090                  vsram_dma_cmd  			equ 0x40000090
+00000218                            
+00000218                            ; Hardware version address
+00000218 =00A10001                  hardware_ver_address	equ 0x00A10001
+00000218                            
+00000218                            ; TMSS
+00000218 =00A14000                  tmss_address			equ 0x00A14000
+00000218 =53454741                  tmss_signature			equ 'SEGA'
+00000218                            
+00000218                            ; The size of a word and longword
+00000218 =00000002                  size_word				equ 2
+00000218 =00000004                  size_long				equ 4
+00000218                            
+00000218                            ; The size of one palette (in bytes, words, and longwords)
+00000218 =00000020                  size_palette_b			equ 0x20
+00000218 =00000010                  size_palette_w			equ size_palette_b/size_word
+00000218 =00000008                  size_palette_l			equ size_palette_b/size_long
+00000218                            
+00000218                            ; The size of one graphics tile (in bytes, words, and longwords)
+00000218 =00000020                  size_tile_b				equ 0x20
+00000218 =00000010                  size_tile_w				equ size_tile_b/size_word
+00000218 =00000008                  size_tile_l				equ size_tile_b/size_long
+00000218                            
+00000218                            ; Text draw position (in tiles)
+00000218 =00000008                  text_pos_x				equ 0x08
+00000218 =00000010                  text_pos_y				equ 0x10
+00000218                            
+00000218                            ; Speed (in pixels per frame) to move our scroll planes
+00000218 =00000002                  plane_a_scroll_speed_x	equ 0x2
+00000218 =00000001                  plane_b_scroll_speed_y	equ 0x1
+00000218                            
+00000218                            ;*********
+00000218                            ; PALETTE
+00000218                            ;*********
+00000218                            ; A single colour palette (16 colours) we'll be using to draw text.
+00000218                            ; Colour #0 is always transparent, no matter what colour value
+00000218                            ; you specify.
+00000218                            ;==============================================================
+00000218                            ; Each colour is in binary format 0000 BBB0 GGG0 RRR0,
+00000218                            ; so 0x0000 is black, 0x0EEE is white (NOT 0x0FFF, since the
+00000218                            ; bottom bit is discarded), 0x000E is red, 0x00E0 is green, and
+00000218                            ; 0x0E00 is blue.
+00000218                            ;
+00000218                            ; For this sample we cycle through a list of some of these,
+00000218                            ; they're repeated through it, but I'm not really good at
+00000218                            ; deciding colors anyway :'D.
+00000218                            ;==============================================================
+00000218                            Palette:
+00000218 0000                       	dc.w 0x0000	; Colour 0 = Transparent
+0000021A 0000                       	dc.w 0x0000	; Colour 1 = Black
+0000021C 0EEE                       	dc.w 0x0EEE	; Colour 2 = White
+0000021E 000E                       	dc.w 0x000E	; Colour 3 = Red
+00000220 00E0                       	dc.w 0x00E0	; Colour 4 = Blue
+00000222 0E00                       	dc.w 0x0E00	; Colour 5 = Green
+00000224 0E0E                       	dc.w 0x0E0E	; Colour 6 = Pink
+00000226 0000                       	dc.w 0x0000	; Colour 7 = Black
+00000228 0EEE                       	dc.w 0x0EEE	; Colour 8 = White
+0000022A 000E                       	dc.w 0x000E	; Colour 9 = Red
+0000022C 00E0                       	dc.w 0x00E0	; Colour 10 = Blue
+0000022E 0E00                       	dc.w 0x0E00	; Colour 11 = Green
+00000230 0E0E                       	dc.w 0x0E0E	; Colour 12 = Pink
+00000232 000E                       	dc.w 0x000E	; Colour 13 = Red
+00000234 00E0                       	dc.w 0x00E0	; Colour 14 = Blue
+00000236 0E00                       	dc.w 0x0E00	; Colour 15 = Green
+00000236 0E00                       	dc.w 0x0E00	; Colour 15 = Green
+00000238                            	include 'macros.asm'		; VDP macros
+00000238                            ;**************************************************************
+00000238                            ; VRAM WRITE MACROS
+00000238                            ;**************************************************************
+00000238                            ; Some utility macros to help generate addresses and commands for
+00000238                            ; writing data to video memory, since they're tricky (and
+00000238                            ; error prone) to calculate manually.
+00000238                            ; The resulting command and address is written to the VDP's
+00000238                            ; control port, ready to accept data in the data port.
+00000238                            ;**************************************************************
+00000238                            	
+00000238                            ; Set the VRAM (video RAM) address to write to next
+00000238                            SetVRAMWrite: macro addr
+00000238                            	move.l  #(vdp_cmd_vram_write)|((\addr)&$3FFF)<<16|(\addr)>>14, vdp_control
+00000238                            	endm
+00000238                            	
+00000238                            ; Set the CRAM (colour RAM) address to write to next
+00000238                            SetCRAMWrite: macro addr
+00000238                            	move.l  #(vdp_cmd_cram_write)|((\addr)&$3FFF)<<16|(\addr)>>14, vdp_control
+00000238                            	endm
+00000238                            
+00000238                            ; Set the VSRAM (vertical scroll RAM) address to write to next
+00000238                            SetVSRAMWrite: macro addr
+00000238                            	move.l  #(vdp_cmd_vsram_write)|((\addr)&$3FFF)<<16|(\addr)>>14, vdp_control
+00000238                            	endm
+00000238                            	endm
+00000238                            	include 'text.asm'			; Text drawing routines
+00000238                            	include 'charmap.asm'
+00000238 =00000020                  ASCIIStart: equ 0x20 ; First ASCII code in table
+00000238                            
+00000238                            ASCIIMap:
+00000238 00                         	dc.b 0x00	; SPACE (ASCII code 0x20)
+00000239 28                         	dc.b 0x28   ; ! Exclamation mark
+0000023A 2B                         	dc.b 0x2B   ; " Double quotes
+0000023B 2E                         	dc.b 0x2E   ; # Hash
+0000023C 00                         	dc.b 0x00	; UNUSED
+0000023D 00                         	dc.b 0x00	; UNUSED
+0000023E 00                         	dc.b 0x00	; UNUSED
+0000023F 2C                         	dc.b 0x2C   ; ' Single quote
+00000240 29                         	dc.b 0x29   ; ( Open parenthesis
+00000241 2A                         	dc.b 0x2A   ; ) Close parenthesis
+00000242 00                         	dc.b 0x00	; UNUSED
+00000243 2F                         	dc.b 0x2F   ; + Plus
+00000244 26                         	dc.b 0x26   ; , Comma
+00000245 30                         	dc.b 0x30   ; - Minus
+00000246 25                         	dc.b 0x25   ; . Full stop
+00000247 31                         	dc.b 0x31   ; / Slash or divide
+00000248 1B                         	dc.b 0x1B   ; 0 Zero
+00000249 1C                         	dc.b 0x1C   ; 1 One
+0000024A 1D                         	dc.b 0x1D   ; 2 Two
+0000024B 1E                         	dc.b 0x1E   ; 3 Three
+0000024C 1F                         	dc.b 0x1F   ; 4 Four
+0000024D 20                         	dc.b 0x20   ; 5 Five
+0000024E 21                         	dc.b 0x21   ; 6 Six
+0000024F 22                         	dc.b 0x22   ; 7 Seven
+00000250 23                         	dc.b 0x23   ; 8 Eight
+00000251 24                         	dc.b 0x24   ; 9 Nine
+00000252 2D                         	dc.b 0x2D   ; : Colon
+00000253 00                         	dc.b 0x00	; UNUSED
+00000254 00                         	dc.b 0x00	; UNUSED
+00000255 00                         	dc.b 0x00	; UNUSED
+00000256 00                         	dc.b 0x00	; UNUSED
+00000257 27                         	dc.b 0x27   ; ? Question mark
+00000258 00                         	dc.b 0x00	; UNUSED
+00000259 01                         	dc.b 0x01	; A
+0000025A 02                         	dc.b 0x02   ; B
+0000025B 03                         	dc.b 0x03	; C
+0000025C 04                         	dc.b 0x04   ; D
+0000025D 05                         	dc.b 0x05	; E
+0000025E 06                         	dc.b 0x06	; F
+0000025F 07                         	dc.b 0x07	; G
+00000260 08                         	dc.b 0x08	; H
+00000261 09                         	dc.b 0x09	; I
+00000262 0A                         	dc.b 0x0A	; J
+00000263 0B                         	dc.b 0x0B	; K
+00000264 0C                         	dc.b 0x0C	; L
+00000265 0D                         	dc.b 0x0D	; M
+00000266 0E                         	dc.b 0x0E	; N
+00000267 0F                         	dc.b 0x0F	; O
+00000268 10                         	dc.b 0x10	; P
+00000269 11                         	dc.b 0x11	; Q
+0000026A 12                         	dc.b 0x12	; R
+0000026B 13                         	dc.b 0x13	; S
+0000026C 14                         	dc.b 0x14	; T
+0000026D 15                         	dc.b 0x15	; U
+0000026E 16                         	dc.b 0x16	; V
+0000026F 17                         	dc.b 0x17	; W
+00000270 18                         	dc.b 0x18	; X
+00000271 19                         	dc.b 0x19	; Y
+00000272 1A                         	dc.b 0x1A	; Z (ASCII code 0x5A)
+00000273                            
+00000273 =0000003A                  text_tile_count    equ 0x3A
+00000273 =0000003A                  text_tile_count    equ 0x3A
+00000273                            
+00000273                            	; Align 8 bytes
+00000274 004E 71                    	nop 0,8
+00000276                            
+00000276                            LoadTextTiles:	
+00000276                            	; Setup the VDP to write to VRAM address 0x0000 (the address of the first graphics tile, index 0)
+00000276 23FC 4000 0000 00C0 0004   	SetVRAMWrite vram_addr_tiles
+00000280                            	
+00000280                            	; Write the font glyph tiles to VRAM
+00000280 41F9 0000 0000             	lea PixelFont, a0
+00000286 303C 01CF                  	move.w #(text_tile_count*size_tile_l)-1, d0		; Loop counter = 8 longwords per tile * num tiles (-1 for DBRA loop)
+0000028A                            	@CharLp:									; Start of loop
+0000028A 23D8 00C0 0000             	move.l (a0)+, vdp_data						; Write tile line (4 bytes per line), and post-increment address
+00000290 51C8 FFF8                  	dbra d0, @CharLp							; Decrement d0 and loop until finished (when d0 reaches -1)
+00000294                            
+00000294 4E75                       	rts
+00000296                            
+00000296                            DrawTextPlaneANew:
+00000296                                ; d0 (w) - First tile ID of font
+00000296                                ; a0 (l) - String address
+00000296                                ; requires previously setting text position through: SetVRAMWrite vram_addr_plane_a+(((text_pos_y*vdp_plane_width)+text_pos_x)*size_word)
+00000296                            
+00000296 43F9 0000 0238             	lea ASCIIMap, a1           	; Load address of ASCII map into a1
+0000029C 4282                       	clr.l 	d2
+0000029E 4283                       	clr.l 	d3
+000002A0                            @CharLookup:
+000002A0 1418                       	move.b   (a0)+, d2              ; Move ASCII byte to lower byte of d2
+000002A2 0C02 0000                  	cmp.b    #0x0, d2               ; Test if byte is zero (string terminator)
+000002A6 6700                       	beq.b    @CharEnd               ; If byte was zero, branch to end
+000002A8                            
+000002A8 0402 0020                  	sub.b    #ASCIIStart, d2        ; Subtract first ASCII code to get table entry index
+000002AC 1631 2000                  	move.b  (a1,d2.w), d3           ; Move tile ID from table (index in lower word of d2) to lower byte of d3
+000002B0 33C3 00C0 0000             	move.w 	d3, vdp_data			; draw letter
+000002B6 6000 FFE8                  	bra @CharLookup
+000002BA                            @CharEnd:
+000002BA 4E75                       	rts
+000002BC                            
+000002BC                            DrawNumberTextPlaneA:
+000002BC                            	; d4 (w) - Number
+000002BC                            	; d0 (w) - First tile ID of font
+000002BC                            	; requires previously setting text position through: SetVRAMWrite vram_addr_plane_a+(((text_pos_y*vdp_plane_width)+text_pos_x)*size_word)
+000002BC                            
+000002BC 4282                       	clr.l 	d2
+000002BE 4283                       	clr.l 	d3
+000002C0 4285                       	clr.l 	d5
+000002C2 4286                       	clr.l 	d6
+000002C4 3C3C 000C                  	move.w 	 #12, d6					; number of shifts to apply to the original number, we start with the bigger figure	
+000002C8 43F9 0000 0238             	lea      ASCIIMap, a1           ; Load address of ASCII map into a1
+000002CE                            
+000002CE                            @number_calculation_loop:
+000002CE 3A04                       	move.w 	d4, d5					; Copy original number
+000002D0 EC6D                       	lsr.w 	d6, d5					; Shift figure and mask it to draw
+000002D2 0245 000F                  	and.w 	#0xF, d5
+000002D6                            	
+000002D6 0C05 000A                  	cmp.b #10, d5		; check if number is bigger than 9
+000002DA 6C00 0000                  	bge @bigger_num
+000002DE                            @small_num:	
+000002DE 0645 0010                  	add.w #16, d5		; get char for this number
+000002E2 6000 0000                  	bra @draw_num
+000002E6                            @bigger_num:
+000002E6 0645 0017                  	add.w #23, d5
+000002EA                            @draw_num 
+000002EA 1631 5000                  	move.b   (a1,d5.w), d3          ; Move tile ID from table (index in lower word of d2) to lower byte of d3
+000002EE 33C3 00C0 0000             	move.w   d3, vdp_data           ; Move palette and pattern IDs to VDP data port
+000002F4                            
+000002F4 5946                       	subq #4, d6
+000002F6 6B00 0000                  	bmi @end
+000002FA 6000 FFD2                  	bra @number_calculation_loop
+000002FE                            @end:
+000002FE 4E75                       	rts
+000002FE 4E75                       	rts
+00000300                            	include 'pixelfont.asm'		; Font
+00000300                            	; Align 8 bytes
+00000300 4E71                       	nop 0,8
+00000302                            
+00000302                            PixelFont: ; Font start address
+00000302                            
+00000302 0000 0000                  	dc.l	$00000000
+00000306 0000 0000                  	dc.l	$00000000
+0000030A 0000 0000                  	dc.l	$00000000
+0000030E 0000 0000                  	dc.l	$00000000
+00000312 0000 0000                  	dc.l	$00000000
+00000316 0000 0000                  	dc.l	$00000000
+0000031A 0000 0000                  	dc.l	$00000000
+0000031E 0000 0000                  	dc.l	$00000000
+00000322                            
+00000322 0222 2200                  	dc.l	$02222200
+00000326 2200 0220                  	dc.l	$22000220
+0000032A 2022 2020                  	dc.l	$20222020
+0000032E 2000 0020                  	dc.l	$20000020
+00000332 2022 2020                  	dc.l	$20222020
+00000336 2020 2020                  	dc.l	$20202020
+0000033A 2220 2220                  	dc.l	$22202220
+0000033E 0000 0000                  	dc.l	$00000000
+00000342                            	
+00000342 2222 2200                  	dc.l	$22222200
+00000346 2000 0220                  	dc.l	$20000220
+0000034A 2022 2020                  	dc.l	$20222020
+0000034E 2000 0220                  	dc.l	$20000220
+00000352 2022 2020                  	dc.l	$20222020
+00000356 2000 0220                  	dc.l	$20000220
+0000035A 2222 2200                  	dc.l	$22222200
+0000035E 0000 0000                  	dc.l	$00000000
+00000362                            	
+00000362 0222 2220                  	dc.l	$02222220
+00000366 2200 0020                  	dc.l	$22000020
+0000036A 2022 2220                  	dc.l	$20222220
+0000036E 2020 0000                  	dc.l	$20200000
+00000372 2022 2220                  	dc.l	$20222220
+00000376 2200 0020                  	dc.l	$22000020
+0000037A 0222 2220                  	dc.l	$02222220
+0000037E 0000 0000                  	dc.l	$00000000
+00000382                            	
+00000382 2222 2200                  	dc.l	$22222200
+00000386 2000 0220                  	dc.l	$20000220
+0000038A 2022 2020                  	dc.l	$20222020
+0000038E 2020 2020                  	dc.l	$20202020
+00000392 2022 2020                  	dc.l	$20222020
+00000396 2000 0220                  	dc.l	$20000220
+0000039A 2222 2200                  	dc.l	$22222200
+0000039E 0000 0000                  	dc.l	$00000000
+000003A2                            	
+000003A2 2222 2220                  	dc.l	$22222220
+000003A6 2000 0020                  	dc.l	$20000020
+000003AA 2022 2220                  	dc.l	$20222220
+000003AE 2000 2000                  	dc.l	$20002000
+000003B2 2022 2220                  	dc.l	$20222220
+000003B6 2000 0020                  	dc.l	$20000020
+000003BA 2222 2220                  	dc.l	$22222220
+000003BE 0000 0000                  	dc.l	$00000000
+000003C2                            	
+000003C2 2222 2220                  	dc.l	$22222220
+000003C6 2000 0020                  	dc.l	$20000020
+000003CA 2022 2220                  	dc.l	$20222220
+000003CE 2000 2000                  	dc.l	$20002000
+000003D2 2022 2000                  	dc.l	$20222000
+000003D6 2020 0000                  	dc.l	$20200000
+000003DA 2220 0000                  	dc.l	$22200000
+000003DE 0000 0000                  	dc.l	$00000000
+000003E2                            	
+000003E2 0222 2220                  	dc.l	$02222220
+000003E6 2200 0020                  	dc.l	$22000020
+000003EA 2022 2220                  	dc.l	$20222220
+000003EE 2020 0020                  	dc.l	$20200020
+000003F2 2022 2020                  	dc.l	$20222020
+000003F6 2200 0020                  	dc.l	$22000020
+000003FA 0222 2220                  	dc.l	$02222220
+000003FE 0000 0000                  	dc.l	$00000000
+00000402                            	
+00000402 2220 2220                  	dc.l	$22202220
+00000406 2020 2020                  	dc.l	$20202020
+0000040A 2022 2020                  	dc.l	$20222020
+0000040E 2000 0020                  	dc.l	$20000020
+00000412 2022 2020                  	dc.l	$20222020
+00000416 2020 2020                  	dc.l	$20202020
+0000041A 2220 2220                  	dc.l	$22202220
+0000041E 0000 0000                  	dc.l	$00000000
+00000422                            	
+00000422 2222 2220                  	dc.l	$22222220
+00000426 2000 0020                  	dc.l	$20000020
+0000042A 2220 2220                  	dc.l	$22202220
+0000042E 0020 2000                  	dc.l	$00202000
+00000432 2220 2220                  	dc.l	$22202220
+00000436 2000 0020                  	dc.l	$20000020
+0000043A 2222 2220                  	dc.l	$22222220
+0000043E 0000 0000                  	dc.l	$00000000
+00000442                            	
+00000442 0000 2220                  	dc.l	$00002220
+00000446 0000 2020                  	dc.l	$00002020
+0000044A 0000 2020                  	dc.l	$00002020
+0000044E 2220 2020                  	dc.l	$22202020
+00000452 2022 2020                  	dc.l	$20222020
+00000456 2200 0220                  	dc.l	$22000220
+0000045A 0222 2200                  	dc.l	$02222200
+0000045E 0000 0000                  	dc.l	$00000000
+00000462                            	
+00000462 2220 2220                  	dc.l	$22202220
+00000466 2022 2020                  	dc.l	$20222020
+0000046A 2022 0220                  	dc.l	$20220220
+0000046E 2000 2200                  	dc.l	$20002200
+00000472 2022 0220                  	dc.l	$20220220
+00000476 2022 2020                  	dc.l	$20222020
+0000047A 2220 2220                  	dc.l	$22202220
+0000047E 0000 0000                  	dc.l	$00000000
+00000482                            
+00000482 2220 0000                  	dc.l	$22200000
+00000486 2020 0000                  	dc.l	$20200000
+0000048A 2020 0000                  	dc.l	$20200000
+0000048E 2020 0000                  	dc.l	$20200000
+00000492 2022 2220                  	dc.l	$20222220
+00000496 2000 0020                  	dc.l	$20000020
+0000049A 2222 2220                  	dc.l	$22222220
+0000049E 0000 0000                  	dc.l	$00000000
+000004A2                            	
+000004A2 2220 2220                  	dc.l	$22202220
+000004A6 2022 2020                  	dc.l	$20222020
+000004AA 2002 0020                  	dc.l	$20020020
+000004AE 2020 2020                  	dc.l	$20202020
+000004B2 2022 2020                  	dc.l	$20222020
+000004B6 2020 2020                  	dc.l	$20202020
+000004BA 2220 2220                  	dc.l	$22202220
+000004BE 0000 0000                  	dc.l	$00000000
+000004C2                            	
+000004C2 2220 2220                  	dc.l	$22202220
+000004C6 2022 2020                  	dc.l	$20222020
+000004CA 2002 2020                  	dc.l	$20022020
+000004CE 2020 2020                  	dc.l	$20202020
+000004D2 2022 0020                  	dc.l	$20220020
+000004D6 2022 2020                  	dc.l	$20222020
+000004DA 2220 2220                  	dc.l	$22202220
+000004DE 0000 0000                  	dc.l	$00000000
+000004E2                            	
+000004E2 0222 2200                  	dc.l	$02222200
+000004E6 2200 0220                  	dc.l	$22000220
+000004EA 2022 2020                  	dc.l	$20222020
+000004EE 2020 2020                  	dc.l	$20202020
+000004F2 2022 2020                  	dc.l	$20222020
+000004F6 2200 0220                  	dc.l	$22000220
+000004FA 0222 2200                  	dc.l	$02222200
+000004FE 0000 0000                  	dc.l	$00000000
+00000502                            	
+00000502 2222 2200                  	dc.l	$22222200
+00000506 2000 0220                  	dc.l	$20000220
+0000050A 2022 2020                  	dc.l	$20222020
+0000050E 2000 0220                  	dc.l	$20000220
+00000512 2022 2200                  	dc.l	$20222200
+00000516 2020 0000                  	dc.l	$20200000
+0000051A 2220 0000                  	dc.l	$22200000
+0000051E 0000 0000                  	dc.l	$00000000
+00000522                            	
+00000522 0222 2200                  	dc.l	$02222200
+00000526 2200 0220                  	dc.l	$22000220
+0000052A 2022 2020                  	dc.l	$20222020
+0000052E 2020 2020                  	dc.l	$20202020
+00000532 2022 0220                  	dc.l	$20220220
+00000536 2200 2020                  	dc.l	$22002020
+0000053A 0222 2220                  	dc.l	$02222220
+0000053E 0000 0000                  	dc.l	$00000000
+00000542                            	
+00000542 2222 2200                  	dc.l	$22222200
+00000546 2000 0220                  	dc.l	$20000220
+0000054A 2022 2020                  	dc.l	$20222020
+0000054E 2000 0220                  	dc.l	$20000220
+00000552 2022 0220                  	dc.l	$20220220
+00000556 2022 2020                  	dc.l	$20222020
+0000055A 2220 2220                  	dc.l	$22202220
+0000055E 0000 0000                  	dc.l	$00000000
+00000562                            	
+00000562 0222 2220                  	dc.l	$02222220
+00000566 2200 0020                  	dc.l	$22000020
+0000056A 2022 2220                  	dc.l	$20222220
+0000056E 2200 0220                  	dc.l	$22000220
+00000572 2222 2020                  	dc.l	$22222020
+00000576 2000 0220                  	dc.l	$20000220
+0000057A 2222 2200                  	dc.l	$22222200
+0000057E 0000 0000                  	dc.l	$00000000
+00000582                            	
+00000582 2222 2220                  	dc.l	$22222220
+00000586 2000 0020                  	dc.l	$20000020
+0000058A 2220 2220                  	dc.l	$22202220
+0000058E 0020 2000                  	dc.l	$00202000
+00000592 0020 2000                  	dc.l	$00202000
+00000596 0020 2000                  	dc.l	$00202000
+0000059A 0022 2000                  	dc.l	$00222000
+0000059E 0000 0000                  	dc.l	$00000000
+000005A2                            	
+000005A2 2220 2220                  	dc.l	$22202220
+000005A6 2020 2020                  	dc.l	$20202020
+000005AA 2020 2020                  	dc.l	$20202020
+000005AE 2020 2020                  	dc.l	$20202020
+000005B2 2022 2020                  	dc.l	$20222020
+000005B6 2200 0220                  	dc.l	$22000220
+000005BA 0222 2200                  	dc.l	$02222200
+000005BE 0000 0000                  	dc.l	$00000000
+000005C2                            	
+000005C2 2220 2220                  	dc.l	$22202220
+000005C6 2020 2020                  	dc.l	$20202020
+000005CA 2022 2020                  	dc.l	$20222020
+000005CE 2202 0220                  	dc.l	$22020220
+000005D2 0202 0200                  	dc.l	$02020200
+000005D6 0220 2200                  	dc.l	$02202200
+000005DA 0022 2000                  	dc.l	$00222000
+000005DE 0000 0000                  	dc.l	$00000000
+000005E2                            	
+000005E2 2220 2220                  	dc.l	$22202220
+000005E6 2020 2020                  	dc.l	$20202020
+000005EA 2022 2020                  	dc.l	$20222020
+000005EE 2020 2020                  	dc.l	$20202020
+000005F2 2002 0020                  	dc.l	$20020020
+000005F6 2022 2020                  	dc.l	$20222020
+000005FA 2220 2220                  	dc.l	$22202220
+000005FE 0000 0000                  	dc.l	$00000000
+00000602                            	
+00000602 2220 2220                  	dc.l	$22202220
+00000606 2022 2020                  	dc.l	$20222020
+0000060A 2202 0220                  	dc.l	$22020220
+0000060E 0220 2200                  	dc.l	$02202200
+00000612 2202 0220                  	dc.l	$22020220
+00000616 2022 2020                  	dc.l	$20222020
+0000061A 2220 2220                  	dc.l	$22202220
+0000061E 0000 0000                  	dc.l	$00000000
+00000622                            	
+00000622 2220 2220                  	dc.l	$22202220
+00000626 2022 2020                  	dc.l	$20222020
+0000062A 2202 0220                  	dc.l	$22020220
+0000062E 0220 2200                  	dc.l	$02202200
+00000632 0020 2000                  	dc.l	$00202000
+00000636 0020 2000                  	dc.l	$00202000
+0000063A 0022 2000                  	dc.l	$00222000
+0000063E 0000 0000                  	dc.l	$00000000
+00000642                            	
+00000642 2222 2220                  	dc.l	$22222220
+00000646 2000 0020                  	dc.l	$20000020
+0000064A 2222 0220                  	dc.l	$22220220
+0000064E 0220 2200                  	dc.l	$02202200
+00000652 2202 2220                  	dc.l	$22022220
+00000656 2000 0020                  	dc.l	$20000020
+0000065A 2222 2220                  	dc.l	$22222220
+0000065E 0000 0000                  	dc.l	$00000000
+00000662                            	
+00000662 0222 2200                  	dc.l	$02222200
+00000666 2200 0220                  	dc.l	$22000220
+0000066A 2022 0020                  	dc.l	$20220020
+0000066E 2020 2020                  	dc.l	$20202020
+00000672 2002 2020                  	dc.l	$20022020
+00000676 2200 0220                  	dc.l	$22000220
+0000067A 0222 2200                  	dc.l	$02222200
+0000067E 0000 0000                  	dc.l	$00000000
+00000682                            	
+00000682 0222 2000                  	dc.l	$02222000
+00000686 0200 2000                  	dc.l	$02002000
+0000068A 0220 2000                  	dc.l	$02202000
+0000068E 0020 2000                  	dc.l	$00202000
+00000692 0220 2200                  	dc.l	$02202200
+00000696 0200 0200                  	dc.l	$02000200
+0000069A 0222 2200                  	dc.l	$02222200
+0000069E 0000 0000                  	dc.l	$00000000
+000006A2                            	
+000006A2 2222 2200                  	dc.l	$22222200
+000006A6 2000 0220                  	dc.l	$20000220
+000006AA 2222 2020                  	dc.l	$22222020
+000006AE 2200 0220                  	dc.l	$22000220
+000006B2 2022 2220                  	dc.l	$20222220
+000006B6 2000 0020                  	dc.l	$20000020
+000006BA 2222 2220                  	dc.l	$22222220
+000006BE 0000 0000                  	dc.l	$00000000
+000006C2                            	
+000006C2 2222 2200                  	dc.l	$22222200
+000006C6 2000 0220                  	dc.l	$20000220
+000006CA 2222 2020                  	dc.l	$22222020
+000006CE 0020 0220                  	dc.l	$00200220
+000006D2 2222 2020                  	dc.l	$22222020
+000006D6 2000 0220                  	dc.l	$20000220
+000006DA 2222 2200                  	dc.l	$22222200
+000006DE 0000 0000                  	dc.l	$00000000
+000006E2                            	
+000006E2 2220 2220                  	dc.l	$22202220
+000006E6 2020 2020                  	dc.l	$20202020
+000006EA 2022 2020                  	dc.l	$20222020
+000006EE 2000 0020                  	dc.l	$20000020
+000006F2 2222 2020                  	dc.l	$22222020
+000006F6 0000 2020                  	dc.l	$00002020
+000006FA 0000 2220                  	dc.l	$00002220
+000006FE 0000 0000                  	dc.l	$00000000
+00000702                            	
+00000702 2222 2220                  	dc.l	$22222220
+00000706 2000 0020                  	dc.l	$20000020
+0000070A 2022 2220                  	dc.l	$20222220
+0000070E 2000 0220                  	dc.l	$20000220
+00000712 2222 2020                  	dc.l	$22222020
+00000716 2000 0220                  	dc.l	$20000220
+0000071A 2222 2200                  	dc.l	$22222200
+0000071E 0000 0000                  	dc.l	$00000000
+00000722                            	
+00000722 0222 2200                  	dc.l	$02222200
+00000726 2200 0200                  	dc.l	$22000200
+0000072A 2022 2200                  	dc.l	$20222200
+0000072E 2000 0220                  	dc.l	$20000220
+00000732 2022 2020                  	dc.l	$20222020
+00000736 2200 0220                  	dc.l	$22000220
+0000073A 0222 2200                  	dc.l	$02222200
+0000073E 0000 0000                  	dc.l	$00000000
+00000742                            	
+00000742 2222 2220                  	dc.l	$22222220
+00000746 2000 0020                  	dc.l	$20000020
+0000074A 2222 2020                  	dc.l	$22222020
+0000074E 0022 0220                  	dc.l	$00220220
+00000752 0220 2200                  	dc.l	$02202200
+00000756 0202 2000                  	dc.l	$02022000
+0000075A 0222 0000                  	dc.l	$02220000
+0000075E 0000 0000                  	dc.l	$00000000
+00000762                            	
+00000762 0222 2200                  	dc.l	$02222200
+00000766 2200 0220                  	dc.l	$22000220
+0000076A 2022 2020                  	dc.l	$20222020
+0000076E 2200 0220                  	dc.l	$22000220
+00000772 2022 2020                  	dc.l	$20222020
+00000776 2200 0220                  	dc.l	$22000220
+0000077A 0222 2200                  	dc.l	$02222200
+0000077E 0000 0000                  	dc.l	$00000000
+00000782                            	
+00000782 0222 2200                  	dc.l	$02222200
+00000786 2200 0220                  	dc.l	$22000220
+0000078A 2022 2020                  	dc.l	$20222020
+0000078E 2200 0020                  	dc.l	$22000020
+00000792 0222 2020                  	dc.l	$02222020
+00000796 0200 0220                  	dc.l	$02000220
+0000079A 0222 2200                  	dc.l	$02222200
+0000079E 0000 0000                  	dc.l	$00000000
+000007A2                            
+000007A2 0000 0000                  	dc.l	$00000000
+000007A6 0000 0000                  	dc.l	$00000000
+000007AA 0000 0000                  	dc.l	$00000000
+000007AE 0000 0000                  	dc.l	$00000000
+000007B2 0000 0000                  	dc.l	$00000000
+000007B6 2200 0000                  	dc.l	$22000000
+000007BA 2200 0000                  	dc.l	$22000000
+000007BE 0000 0000                  	dc.l	$00000000
+000007C2                            	
+000007C2 0000 0000                  	dc.l	$00000000
+000007C6 0000 0000                  	dc.l	$00000000
+000007CA 0000 0000                  	dc.l	$00000000
+000007CE 0000 0000                  	dc.l	$00000000
+000007D2 2220 0000                  	dc.l	$22200000
+000007D6 2020 0000                  	dc.l	$20200000
+000007DA 2020 0000                  	dc.l	$20200000
+000007DE 2220 0000                  	dc.l	$22200000
+000007E2                            	
+000007E2 0222 2200                  	dc.l	$02222200
+000007E6 2200 0220                  	dc.l	$22000220
+000007EA 2022 2020                  	dc.l	$20222020
+000007EE 2220 0220                  	dc.l	$22200220
+000007F2 0022 2200                  	dc.l	$00222200
+000007F6 0020 2000                  	dc.l	$00202000
+000007FA 0022 2000                  	dc.l	$00222000
+000007FE 0000 0000                  	dc.l	$00000000
+00000802                            	
+00000802 2220 0000                  	dc.l	$22200000
+00000806 2020 0000                  	dc.l	$20200000
+0000080A 2020 0000                  	dc.l	$20200000
+0000080E 2020 0000                  	dc.l	$20200000
+00000812 2220 0000                  	dc.l	$22200000
+00000816 2020 0000                  	dc.l	$20200000
+0000081A 2220 0000                  	dc.l	$22200000
+0000081E 0000 0000                  	dc.l	$00000000
+00000822                            	
+00000822 0222 0000                  	dc.l	$02220000
+00000826 2202 0000                  	dc.l	$22020000
+0000082A 2022 0000                  	dc.l	$20220000
+0000082E 2020 0000                  	dc.l	$20200000
+00000832 2022 0000                  	dc.l	$20220000
+00000836 2202 0000                  	dc.l	$22020000
+0000083A 0222 0000                  	dc.l	$02220000
+0000083E 0000 0000                  	dc.l	$00000000
+00000842                            	
+00000842 2220 0000                  	dc.l	$22200000
+00000846 2022 0000                  	dc.l	$20220000
+0000084A 2202 0000                  	dc.l	$22020000
+0000084E 0202 0000                  	dc.l	$02020000
+00000852 2202 0000                  	dc.l	$22020000
+00000856 2022 0000                  	dc.l	$20220000
+0000085A 2220 0000                  	dc.l	$22200000
+0000085E 0000 0000                  	dc.l	$00000000
+00000862                            	
+00000862 2222 2000                  	dc.l	$22222000
+00000866 2020 2000                  	dc.l	$20202000
+0000086A 2020 2000                  	dc.l	$20202000
+0000086E 2222 2000                  	dc.l	$22222000
+00000872 0000 0000                  	dc.l	$00000000
+00000876 0000 0000                  	dc.l	$00000000
+0000087A 0000 0000                  	dc.l	$00000000
+0000087E 0000 0000                  	dc.l	$00000000
+00000882                            	
+00000882 2220 0000                  	dc.l	$22200000
+00000886 2020 0000                  	dc.l	$20200000
+0000088A 2020 0000                  	dc.l	$20200000
+0000088E 2220 0000                  	dc.l	$22200000
+00000892 0000 0000                  	dc.l	$00000000
+00000896 0000 0000                  	dc.l	$00000000
+0000089A 0000 0000                  	dc.l	$00000000
+0000089E 0000 0000                  	dc.l	$00000000
+000008A2                            	
+000008A2 0000 0000                  	dc.l	$00000000
+000008A6 2220 0000                  	dc.l	$22200000
+000008AA 2020 0000                  	dc.l	$20200000
+000008AE 2220 0000                  	dc.l	$22200000
+000008B2 2020 0000                  	dc.l	$20200000
+000008B6 2220 0000                  	dc.l	$22200000
+000008BA 0000 0000                  	dc.l	$00000000
+000008BE 0000 0000                  	dc.l	$00000000
+000008C2                            	
+000008C2 0222 2200                  	dc.l	$02222200
+000008C6 2202 0220                  	dc.l	$22020220
+000008CA 2000 0020                  	dc.l	$20000020
+000008CE 2202 0220                  	dc.l	$22020220
+000008D2 2000 0020                  	dc.l	$20000020
+000008D6 2202 0220                  	dc.l	$22020220
+000008DA 0222 2200                  	dc.l	$02222200
+000008DE 0000 0000                  	dc.l	$00000000
+000008E2                            	
+000008E2 0022 2000                  	dc.l	$00222000
+000008E6 0020 2000                  	dc.l	$00202000
+000008EA 2220 2220                  	dc.l	$22202220
+000008EE 2000 0020                  	dc.l	$20000020
+000008F2 2220 2220                  	dc.l	$22202220
+000008F6 0020 2000                  	dc.l	$00202000
+000008FA 0022 2000                  	dc.l	$00222000
+000008FE 0000 0000                  	dc.l	$00000000
+00000902                            	
+00000902 0000 0000                  	dc.l	$00000000
+00000906 0000 0000                  	dc.l	$00000000
+0000090A 2222 2220                  	dc.l	$22222220
+0000090E 2000 0020                  	dc.l	$20000020
+00000912 2222 2220                  	dc.l	$22222220
+00000916 0000 0000                  	dc.l	$00000000
+0000091A 0000 0000                  	dc.l	$00000000
+0000091E 0000 0000                  	dc.l	$00000000
+00000922                            	
+00000922 0002 2200                  	dc.l	$00022200
+00000926 0022 0200                  	dc.l	$00220200
+0000092A 0220 2200                  	dc.l	$02202200
+0000092E 2202 2000                  	dc.l	$22022000
+00000932 2022 0000                  	dc.l	$20220000
+00000936 2220 0000                  	dc.l	$22200000
+0000093A 0000 0000                  	dc.l	$00000000
+0000093E 0000 0000                  	dc.l	$00000000
+00000942                            
+00000942                            PixelFontEnd                                 ; Font end address
+00000942 =00000640                  PixelFontSizeB: equ (PixelFontEnd-PixelFont) ; Font size in bytes
+00000942 =00000320                  PixelFontSizeW: equ (PixelFontSizeB/2)       ; Font size in words
+00000942 =00000190                  PixelFontSizeL: equ (PixelFontSizeB/4)       ; Font size in longs
+00000942 =00000032                  PixelFontSizeT: equ (PixelFontSizeB/32)      ; Font size in tiles
+00000942 =00000000                  PixelFontVRAM:  equ 0x0000                   ; Dest address in VRAM
+00000942 =00000000                  PixelFontTileID: equ (PixelFontVRAM/32)      ; ID of first tile
+00000942 =00000000                  PixelFontTileID: equ (PixelFontVRAM/32)      ; ID of first tile
+00000942                            	include 'vdp_utils.asm'		; VDP utils
+00000942                            ;********************************************************************************
+00000942                            ; VDP UTILITY FUNCTIONS
+00000942                            ;********************************************************************************
+00000942                            ; Subroutines to initialise the TMSS, and load all VDP registers
+00000942                            ;********************************************************************************
+00000942                            
+00000942                                ;**************************************************************
+00000942                            	; Clear VRAM (video memory)
+00000942                            	;**************************************************************
+00000942                            VDP_ClearVRAM:
+00000942                            	; Setup the VDP to write to VRAM address 0x0000 (start of VRAM)
+00000942 23FC 4000 0000 00C0 0004   	SetVRAMWrite 0x0000
+0000094C                            
+0000094C                            	; Write 0's across all of VRAM
+0000094C 303C 7FFF                  	move.w #(0x00010000/size_word)-1, d0	; Loop counter = 64kb, in words (-1 for DBRA loop)
+00000950                            	@ClrVramLp:								; Start of loop
+00000950 33FC 0000 00C0 0000        	move.w #0x0, vdp_data					; Write a 0x0000 (word size) to VRAM
+00000958 51C8 FFF6                  	dbra   d0, @ClrVramLp					; Decrement d0 and loop until finished (when d0 reaches -1)
+0000095C                            
+0000095C 4E75                           rts
+0000095E                            
+0000095E                                ;**************************************************************
+0000095E                            	; Write the palette to CRAM (colour memory)
+0000095E                            	;**************************************************************
+0000095E                            VDP_ClearCRAM:
+0000095E                            	; Setup the VDP to write to CRAM address 0x0000 (first palette)
+0000095E 23FC C000 0000 00C0 0004   	SetCRAMWrite 0x0000
+00000968                            	
+00000968                            	; Write the palette to CRAM
+00000968 41F9 0000 0218             	lea    Palette, a0				; Move palette address to a0
+0000096E 303C 000F                  	move.w #size_palette_w-1, d0	; Loop counter = 8 words in palette (-1 for DBRA loop)
+00000972                            	@PalLp:							; Start of loop
+00000972 33D8 00C0 0000             	move.w (a0)+, vdp_data			; Write palette entry, post-increment address
+00000978 51C8 FFF8                  	dbra d0, @PalLp					; Decrement d0 and loop until finished (when d0 reaches -1)
+0000097C                            
+0000097C 4E75                           rts
+0000097E                            
+0000097E                            VDP_WriteTMSS:
+0000097E                            
+0000097E                            	; The TMSS (Trademark Security System) locks up the VDP if we don't
+0000097E                            	; write the string 'SEGA' to a special address. This was to discourage
+0000097E                            	; unlicensed developers, since doing this displays the "LICENSED BY SEGA
+0000097E                            	; ENTERPRISES LTD" message to screen (on Mega Drive models 1 and higher).
+0000097E                            	;
+0000097E                            	; First, we need to check if we're running on a model 1+, then write
+0000097E                            	; 'SEGA' to hardware address 0xA14000.
+0000097E                            
+0000097E 1039 00A1 0001             	move.b hardware_ver_address, d0			; Move Megadrive hardware version to d0
+00000984 0200 000F                  	andi.b #0x0F, d0						; The version is stored in last four bits, so mask it with 0F
+00000988 6700 0000                  	beq    @SkipTMSS						; If version is equal to 0, skip TMSS signature
+0000098C 23FC 5345 4741 00A1 4000   	move.l #tmss_signature, tmss_address	; Move the string "SEGA" to 0xA14000
+00000996                            	@SkipTMSS:
+00000996                            
+00000996                            	; Check VDP
+00000996 3039 00C0 0004             	move.w vdp_control, d0					; Read VDP status register (hangs if no access)
+0000099C                            	
+0000099C 4E75                       	rts
+0000099E                            
+0000099E                            VDP_LoadRegisters:
+0000099E                            
+0000099E                            	; To initialise the VDP, we write all of its initial register values from
+0000099E                            	; the table at the top of the file, using a loop.
+0000099E                            	;
+0000099E                            	; To write a register, we write a word to the control port.
+0000099E                            	; The top bit must be set to 1 (so 0x8000), bits 8-12 specify the register
+0000099E                            	; number to write to, and the bottom byte is the value to set.
+0000099E                            	;
+0000099E                            	; In binary:
+0000099E                            	;   100X XXXX YYYY YYYY
+0000099E                            	;   X = register number
+0000099E                            	;   Y = value to write
+0000099E                            
+0000099E                            	; Set VDP registers
+0000099E 41F9 0000 0200             	lea    VDPRegisters, a0		; Load address of register table into a0
+000009A4 303C 0017                  	move.w #0x18-1, d0			; 24 registers to write (-1 for loop counter)
+000009A8 323C 8000                  	move.w #0x8000, d1			; 'Set register 0' command to d1
+000009AC                            
+000009AC                            	@CopyRegLp:
+000009AC 1218                       	move.b (a0)+, d1			; Move register value from table to lower byte of d1 (and post-increment the table address for next time)
+000009AE 33C1 00C0 0004             	move.w d1, vdp_control		; Write command and value to VDP control port
+000009B4 0641 0100                  	addi.w #0x0100, d1			; Increment register #
+000009B8 51C8 FFF2                  	dbra   d0, @CopyRegLp		; Decrement d0, and jump back to top of loop if d0 is still >= 0
+000009BC                            	
+000009BC 4E75                       	rts
+000009BE                            
+000009BE                            	;**************************************************************
+000009BE                            	; Initialise status register and set interrupt level.
+000009BE                            	; This begins firing vertical and horizontal interrupts.
+000009BE                            	;
+000009BE                            	; Since the vinterrupt does something meaningful in this
+000009BE                            	; demo, we start this AFTER setting up the VDP to draw and
+000009BE                            	; intialising the variables in RAM.
+000009BE                            	;**************************************************************
+000009BE                            
+000009BE                            VDP_InitStatusRegister:
+000009BE 46FC 2300                  	move.w #0x2300, sr
+000009C2                            
+000009C2 4E75                       	rts
+000009C2 4E75                       	rts
+000009C4                            	include 'svp.asm'			; SVP comms
+000009C4                            ; ***********************
+000009C4                            ; * SVP access code
+000009C4                            ; ***********************
+000009C4                            
+000009C4 =00A15000                  regXST          equ 0x00A15000
+000009C4 =00A15004                  regXSTState     equ 0x00A15004
+000009C4 =00A15005                  regXSTState_L   equ 0x00A15005
+000009C4 =00A15006                  regInterrupt    equ 0x00A15006
+000009C4                            
+000009C4                            CheckSVPTestResult:
+000009C4                                ; d1 = number of retries before giving up
+000009C4                                ; d2 = number of test to perform
+000009C4                                ; returns: d4 - result of current test: 0xFFFF failure, 0xFFAA success
+000009C4                                ;move.w #0xa, regInterrupt
+000009C4                                ;move.w #0x0, regInterrupt
+000009C4 33C2 00A1 5000                 move.w d2, regXST
+000009CA 303C FFFF                      move.w #0xFFFF, d0
+000009CE                                @CheckLoop:
+000009CE 5340                           subq.w #1, d0
+000009D0 6700 0000                      beq @FinishError
+000009D4 1439 00A1 5005                 move.b regXSTState_L, d2
+000009DA 0802 0000                      btst #0x00, d2      ; is bit 0 in XST_State on? (that means the SVP is over doing its thing)
+000009DE 6700 FFEE                      beq @CheckLoop      ; bit 0 is off
+000009E2                                
+000009E2                                @FinishSuccess:
+000009E2 3839 00A1 5000                     move.w regXST, d4
+000009E8 4E75                               rts
+000009EA                                @FinishError:
+000009EA 383C FFFF                          move.w #0xFFFF, d4  ; copy failed result and return
+000009EE 4E75                               rts
+000009EE 4E75                               rts
+000009F0                            
+000009F0                            ;**************************************************************
+000009F0                            ; SVP CODE PADDING
+000009F0                            ;**************************************************************
+000009F0                            ; SVP will start looking for code at address 0x800, let's leave
+000009F0                            ; space until address 0x20000 (as Virtua Racing did) so that
+000009F0                            ; we can later put SSP1601 code in the following blanks:
+000009F0                            ;***************************************************************
+000009F0                            SVP_PaddingStart:
+000009F0                            
+000009F0                            	DCB.b 0x20000-SVP_PaddingStart,0x00
+00020000                            
+00020000                            ;**************************************************************
+00020000                            ; CODE ENTRY POINT
+00020000                            ;**************************************************************
+00020000                            ; The "main()" function. Your code starts here. Once the CPU
+00020000                            ; has finished initialising, it will jump to this entry point
+00020000                            ; (specified in the vector table at the top of the file).
+00020000                            ;
+00020000                            ; This should usually be address 0x20000, right after the space
+00020000                            ; reserved for SVP code inside the ROM.
+00020000                            ;**************************************************************
+00020000                            CPU_EntryPoint:
+00020000                            
+00020000                            	;***************************
+00020000                            	; Initialise the Mega Drive
+00020000                            	;***************************
+00020000                            
+00020000                            	; Write the TMSS signature (if a model 1+ Mega Drive)
+00020000 4EB9 0000 097E             	jsr    	VDP_WriteTMSS
+00020006                            
+00020006                            	; Load the initial VDP registers
+00020006 4EB9 0000 099E             	jsr    	VDP_LoadRegisters
+0002000C 4EB9 0000 0942             	jsr 	VDP_ClearVRAM
+00020012 4EB9 0000 095E             	jsr 	VDP_ClearCRAM
+00020018 4EB9 0000 0276             	jsr 	LoadTextTiles
+0002001E                            	
+0002001E                            	;**************
+0002001E                            	; Write titles
+0002001E                            	;**************
+0002001E                            
+0002001E                            	; Draw main title:
+0002001E 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_title)*vdp_plane_width)+text_pos_x_title)*size_word)
+00020028 41F9 0000 0000             	lea StringTitle, a0			; address for string
+0002002E 4EB9 0000 0296             	jsr DrawTextPlaneANew
+00020034                            
+00020034                            	; Draw test #1 title
+00020034 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_test1_title)*vdp_plane_width)+text_pos_x_test1_title)*size_word)
+0002003E 41F9 0000 0000             	lea StringCommTestTitle, a0			; address for string
+00020044 4EB9 0000 0296             	jsr DrawTextPlaneANew
+0002004A                            
+0002004A                            	;****************
+0002004A                            	; SVP test calls
+0002004A                            	;****************
+0002004A                            	; Execute test 0x100 (comm test with SVP)
+0002004A 343C 0100                  	move.w #0x0100, d2
+0002004E 323C FFFF                  	move.w #0xFFFF, d1	; number of comm check retries.
+00020052 4EB9 0000 09C4             	jsr 		CheckSVPTestResult
+00020058                            
+00020058                            	; show value of XST (we should update this maybe?)
+00020058 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_xst)*vdp_plane_width)+text_pos_x_xst)*size_word)
+00020062 4EB9 0000 02BC             	jsr DrawNumberTextPlaneA
+00020068                            	
+00020068                            	; show value of XST_state:
+00020068 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_xst_state)*vdp_plane_width)+text_pos_x_xst_state)*size_word)
+00020072 3839 00A1 5004             	move.w  regXSTState, d4
+00020078 4EB9 0000 02BC             	jsr DrawNumberTextPlaneA
+0002007E                            	
+0002007E                            	; Show what's on DRAM now:
+0002007E 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_dram_init)*vdp_plane_width)+text_pos_x_dram_init)*size_word)
+00020088 41F9 0030 0000             	lea 0x00300000, a0
+0002008E 3810                           move.w (a0), d4     ; copy test results from DRAM
+00020090 4EB9 0000 02BC             	jsr DrawNumberTextPlaneA
+00020096                                
+00020096 0C44 FFAA                  	cmp.w #0xFFAA, d4
+0002009A 6700 0000                  	beq @TestSuccess00
+0002009E 6600 0000                  	bne @TestFailure00
+000200A2                            
+000200A2                            	@TestSuccess00:
+000200A2 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_test1_result)*vdp_plane_width)+text_pos_x_test1_result)*size_word)
+000200AC 41F9 0000 0000             	lea StringOK, a0			; address for string
+000200B2 4EB9 0000 0296             	jsr DrawTextPlaneANew
+000200B8 6000 0000                  	bra @Stop
+000200BC                            
+000200BC                            	@TestFailure00:
+000200BC 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_test1_result)*vdp_plane_width)+text_pos_x_test1_result)*size_word)
+000200C6 41F9 0000 0000             	lea StringError, a0			; address for string
+000200CC 4EB9 0000 0296             	jsr DrawTextPlaneANew
+000200D2 6000 0000                  	bra @Stop
+000200D6                            
+000200D6                            	@Stop:
+000200D6 6000 FFFE                  	bra @stop
+000200DA                            
+000200DA 4EB9 0000 09BE             	jsr VDP_InitStatusRegister
+000200E0                            
+000200E0                            	; Finished!
+000200E0                            	
+000200E0                            ; ********************************************************************************************
+000200E0                            ; INTERRUPT ROUTINES
+000200E0                            ; ********************************************************************************************
+000200E0                            ; The interrupt routines, as specified in the vector table at the top of the file.
+000200E0                            ; Note that we use `rte` to return from an interrupt, not `rts` like a subroutine.
+000200E0                            ; ********************************************************************************************
+000200E0                            
+000200E0                            ; Vertical interrupt - run once per frame (50hz in PAL, 60hz in NTSC)
+000200E0                            INT_VInterrupt:
+000200E0 4E73                       	rte
+000200E2                            
+000200E2                            ; Horizontal interrupt - run once per N scanlines (N = specified in VDP register 0xA)
+000200E2                            INT_HInterrupt:
+000200E2                            	; Doesn't do anything in this demo
+000200E2 4E73                       	rte
+000200E4                            
+000200E4                            ; NULL interrupt - for interrupts we don't care about
+000200E4                            INT_Null:
+000200E4 4E73                       	rte
+000200E6                            
+000200E6                            ; Exception interrupt - called if an error has occured
+000200E6                            CPU_Exception:
+000200E6                            	; Print "EXC" and try to go back:
+000200E6 23FC 0000 0000 00C0 0004   	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_exc)*vdp_plane_width)+text_pos_x_exc)*size_word)
+000200F0 41F9 0000 0000             	lea StringException, a0			; address for string
+000200F6 4EB9 0000 0296             	jsr DrawTextPlaneANew
+000200FC                            
+000200FC 4E73                       	rte
+000200FE                            	
+000200FE                            ;==============================================================
+000200FE                            ; STRINGS + TEXT POSITIONS
+000200FE                            ;==============================================================
+000200FE                            StringTitle:
+000200FE 5356 5020 5445 5354 2052+  	dc.b "SVP TEST ROM",0
+0002010B                            StringCommTestTitle:
+0002010B 4241 5349 4320 5356 5020+  	dc.b "BASIC SVP COMM TEST",0
+0002011F                            StringOK:
+0002011F 4F4B 00                    	dc.b "OK",0
+00020122                            StringError:
+00020122 4552 5200                  	dc.b "ERR",0
+00020126                            StringException:
+00020126 4558 4300                  	dc.b "EXC", 0
+0002012A                            
+0002012A                            ; Text draw position (in tiles)
+0002012A =00000001                  text_pos_y_title			equ 0x01
+0002012A =0000000D                  text_pos_x_title			equ 0x0D
+0002012A =00000003                  text_pos_y_test1_title		equ 0x03
+0002012A =00000002                  text_pos_x_test1_title		equ 0x02
+0002012A =00000003                  text_pos_y_test1_result		equ 0x03
+0002012A =00000020                  text_pos_x_test1_result		equ 0x20
+0002012A =00000018                  text_pos_y_xst				equ 0x18
+0002012A =00000002                  text_pos_x_xst				equ 0x02
+0002012A =00000019                  text_pos_y_xst_state		equ 0x19
+0002012A =00000002                  text_pos_x_xst_state		equ 0x02
+0002012A =0000001A                  text_pos_y_dram_init		equ 0x1A
+0002012A =00000002                  text_pos_x_dram_init		equ 0x02
+0002012A =00000000                  text_pos_y_exc				equ 0x00
+0002012A =00000000                  text_pos_x_exc				equ 0x00
+0002012A                            
+0002012A                            ; A label defining the end of ROM so we can compute the total size.
+0002012A                            ROM_End:

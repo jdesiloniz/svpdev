@@ -1,6 +1,6 @@
 # ssp16asm
 
-A quick and dirty assembler for the Samsung SSP16xx family of DSPs, notably known for its use (under the disguised name of _SVP_ - *Sega Virtua Processor*) in the Mega Drive/Genesis version of the game *Virtua Racing*.
+A quick and dirty assembler for the Samsung SSP16xx family of DSPs, notably known for its use (contained within the **SVP** chip - *Sega Virtua Processor*) in the Mega Drive/Genesis version of the game **Virtua Racing**.
 
 ## How to use
 
@@ -112,13 +112,13 @@ A few of the typical assembler directives have been implemented:
 A label is expressed by a string followed by a colon sign (i.e.: `label_name:`). Then they can be addressed to in the code by prefixing them with an `@` sign (i.e.: `@label_name`).  These can serve two purposes:
 
 * Pointers to different parts of the assembled file (i.e.: markers to tables in the source). These pointers are stored in the *symbol table*.
-* Constants built with the `EQU` directive. These will be stored in the *constants table* and substituted by word values during assembly.
+* Constants built with the `EQU`/`EQUB` directives. These will be stored in their *constants tables* and substituted by word/byte values during assembly.
 
 ## Compatibility
 
-This assembler was built with the intention of being used to test an FPGA-based implementation of the SSP1601 DSP found inside the Mega Drive/Genesis version of Virtua Racing. There's also quite a lack of proper information on this family of DSPs (with the exception of all the reverse engineering done to Virtua Racing during the past decade), so there may be compatibility issues between different versions of the core.
+This assembler was built with the intention of being used to test an FPGA-based implementation of the SSP1601 DSP found inside the Mega Drive/Genesis version of Virtua Racing. There's also quite a lack of proper information on this family of DSPs (with the exception of all the reverse engineering done to Virtua Racing during the past decade), so there may be compatibility issues between different versions of the core. If you have further information about the different models, please feel free to let me know so we can have the most complete assembler possible for this family of devices :).
 
-If you have further information about the different models, please feel free to let me know so we can have the most complete assembler possible for this family of devices :).
+It also tries to follow the style that the original Samsung SSP16xx assembler used (as seen in their samples), with some exceptions (`EQUB` for byte constants instead of `EQU`). So most of these samples should build with this assembler needing just minimal changes.
 
 ## Code style
 
@@ -129,8 +129,9 @@ This was my first real project built in Rust (during my spare time in the span o
 * More intensive testing.
 * DUP assembler macro.
 * Includes somewhere down the line...?
+* Meaningful errors including code lines, etc.
 
-## Acknowledges
+## Acknowledgement
 
 To all the people responsible for sheding light on the mysteries surrounding the first home console version of Virtua Racing and the reverse engineering of the SSP1601 DSP (i.e.: *notaz*, *Tasco Deluxe*, *Pierpaolo Prazzoli*, *Grazvydas Ignotas* and many others), thanks a lot for your awesome knowledge and commitment!
 
