@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name svp-adapter-board)(type Legacy)(uri /Users/jdesiloniz/Dev/Projects/VR_reverse_eng/boards/svp-adapter-board/svp-adapter-board.lib)(options "")(descr ""))
+  (lib (name svp-eeprom-board)(type Legacy)(uri ${KIPRJMOD}/svp-eeprom-board.lib)(options "")(descr ""))
+)

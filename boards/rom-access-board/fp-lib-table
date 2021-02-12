@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name vr_rom_footprint)(type KiCad)(uri ${KIPRJMOD}/vr_rom_footprint.pretty)(options "")(descr ""))
+)

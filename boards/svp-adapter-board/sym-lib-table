@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name svp-adapter-board)(type Legacy)(uri ${KIPRJMOD}/svp-adapter-board.lib)(options "")(descr ""))
+)

@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name svp-adapter-board)(type KiCad)(uri ${KIPRJMOD}/svp-adapter-board.pretty)(options "")(descr ""))
+  (lib (name vr_rom_footprint)(type KiCad)(uri ${KIPRJMOD}/vr_rom_footprint.pretty)(options "")(descr ""))
+)

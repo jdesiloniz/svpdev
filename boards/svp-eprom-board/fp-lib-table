@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name svp-eeprom-board)(type KiCad)(uri ${KIPRJMOD}/svp-eeprom-board.pretty)(options "")(descr ""))
+)
