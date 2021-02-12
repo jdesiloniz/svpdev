@@ -4,7 +4,7 @@ A collection of development tools targetting SEGA's SVP chip found in the Mega D
 
 ## Project structure
 
-- **boards**: (to be released) KiCAD format files of boards that allow running custom code on an actual SVP chip.
+- **boards**: KiCAD format files of boards that allow running custom code on an actual SVP chip.
 - **samples**: simple examples containing both DSP/68000 code to help developers not to start from scratch.
 - **tools**: (kinda crude) tools to create software for the SVP, containing an SSP160x assembler and a ROM file manipulation tool.
 
