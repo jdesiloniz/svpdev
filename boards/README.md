@@ -26,7 +26,7 @@ Most of these boards are fairly simple to manufacture and any of the usual servi
 
 ### Warning
 
-I'm a hobbyist and currently I'm actually learning PCB design (and soldering, etc...) on my own while working on this project. That means that these boards aren't made by a proper electronics engineer and probably could be better designed. I've assumed the risks to try these out with my own hardware knowing that something could go wrong, so that goes for anyone trying these out too. I can't be hold responsible if something breaks while playing with these (even if they're fairly simple and don't contain any potentially hazardous components). The risks are small but they are there.
+I'm a hobbyist and currently I'm actually learning PCB design (and soldering, etc...) on my own while working on this project. That means that these boards aren't made by a proper electronics engineer and probably could be better designed. I've assumed the risks to try these out with my own hardware knowing that something could go wrong, so that goes for anyone trying these out too. I can't be held responsible if something breaks while playing with these (even if they're fairly simple and don't contain any potentially hazardous components). The risks are small but they are there.
 
 That being said, it's really fun! You should try it! :D
 
