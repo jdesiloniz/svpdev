@@ -1,6 +1,6 @@
 # SVP Development Boards
 
-[SVP adapter board attached to EPROM board](./img/final-board.jpg)
+![SVP adapter board attached to EPROM board](./img/final-board.jpg)
 
 Here you can find the boards that I've used so far in order to develop code for the SVP chip. Additional boards are in the development with the idea of making development on the real SVP more accessible for developers.
 
@@ -41,4 +41,4 @@ The designs for these boards is open source and MIT-licensed. Also take into acc
 
 ## "Designed under the sun of Cadiz"
 
-You'll find that most of my boards here have this text somewhere in their layout. I was born in Cádiz, the southernmost city in Spain (and the oldest city in Western Europe). It's not a city that's usually associated to technology or these kind of projects so for me it's really important that *cool* things some of us do here related to tech are considered as part of the legacy of this town too. These designs are open source so you're free to modify them at your will, but I'd ask you kindly not to remove this label if you will. Please help us to spread the name of our wonderful city all around the tech world!
+You'll find that most of my boards here have this text somewhere in their layout. I was born in [Cádiz](https://en.wikipedia.org/wiki/C%C3%A1diz), the southernmost city in Spain (and the oldest city in Western Europe). It's not a city that's usually associated to technology or these kind of projects so for me it's really important that *cool* things some of us do here related to tech are considered as part of the legacy of this town too. These designs are open source so you're free to modify them at your will, but I'd ask you kindly not to remove this label if you will. Please help us to spread the name of our wonderful city all around the tech world!
