@@ -3,7 +3,7 @@ pub enum SspMacro {
     Dw,
     Org,
     Equ,
-    Equb
+    Equb,
 }
 
 impl SspMacro {

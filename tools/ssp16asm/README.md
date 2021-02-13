@@ -82,12 +82,16 @@ This family of DSP comes with two main types of registers: general and pointer r
 
 Those can be referred to directly (by just specifying the name of the register), with a first level of indirection expressed with a single set of parenthesis and a second level being express as a double set of parenthesis.
 
-Also some indirections can include modifying the value of the register itself by incrementing (`+`), modulo-incrementing (`+!`) or modulo-decreasing it (`-!`). Two of the pointer registers (`R3` and `R7`) can also be directly addressed by using these four modifiers: `|00`, `|01`, `|02`, `|03`. 
+Also some indirections can include modifying the value of the register itself by incrementing (`+!`), modulo-incrementing (`+`), modulo-decreasing it (`-!`). Two of the pointer registers (`R3` and `R7`) can also be directly addressed by using these four modifiers: `|00`, `|01`, `|02`, `|03`.
 
 * `LD R0, X`
 * `LD (R0!+), Y`.
 * `LD A, ((R2))`.
 * `LD B, (R7|01)`.
+
+#### Addressing mode format note
+
+There are conflicts regarding post-increment addressing modes in current existing sources. **Notaz** refers to `(r0+)` as modulo-incrementing, and `(r0+!)` as a simple post-increment (unaffected by **ST** register). But **Tasco Deluxe** (and existing disassemblies of Virtua Racing) refer as those in the opposite way: `(r0+)` as a simple post-increment, and `(r0+!)` as modulo-increment. Even though the format seems more consistent in **Notaz**'s documentation (modulo-increment and modulo-decrement not sporting any extra bangs), this assembly follows **Tasco**'s notations to agree with the format followed by current disassemblies.
 
 ### Operands
 

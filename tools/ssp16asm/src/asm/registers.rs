@@ -117,24 +117,24 @@ impl SspPointerRegister {
             "r7" => Some(SspPointerRegister::R7(SspModifier::Zero)),
 
             // Direct access with iteration
-            "r0+" => Some(SspPointerRegister::R0(SspModifier::PostIncrement)),
-            "r1+" => Some(SspPointerRegister::R1(SspModifier::PostIncrement)),
-            "r2+" => Some(SspPointerRegister::R2(SspModifier::PostIncrement)),
-            "r4+" => Some(SspPointerRegister::R4(SspModifier::PostIncrement)),
-            "r5+" => Some(SspPointerRegister::R5(SspModifier::PostIncrement)),
-            "r6+" => Some(SspPointerRegister::R6(SspModifier::PostIncrement)),
+            "r0+" => Some(SspPointerRegister::R0(SspModifier::PostIncrementModulo)),
+            "r1+" => Some(SspPointerRegister::R1(SspModifier::PostIncrementModulo)),
+            "r2+" => Some(SspPointerRegister::R2(SspModifier::PostIncrementModulo)),
+            "r4+" => Some(SspPointerRegister::R4(SspModifier::PostIncrementModulo)),
+            "r5+" => Some(SspPointerRegister::R5(SspModifier::PostIncrementModulo)),
+            "r6+" => Some(SspPointerRegister::R6(SspModifier::PostIncrementModulo)),
             "r0-" => Some(SspPointerRegister::R0(SspModifier::PostDecrementModulo)),
             "r1-" => Some(SspPointerRegister::R1(SspModifier::PostDecrementModulo)),
             "r2-" => Some(SspPointerRegister::R2(SspModifier::PostDecrementModulo)),
             "r4-" => Some(SspPointerRegister::R4(SspModifier::PostDecrementModulo)),
             "r5-" => Some(SspPointerRegister::R5(SspModifier::PostDecrementModulo)),
             "r6-" => Some(SspPointerRegister::R6(SspModifier::PostDecrementModulo)),
-            "r0+!" => Some(SspPointerRegister::R0(SspModifier::PostIncrementModulo)),
-            "r1+!" => Some(SspPointerRegister::R1(SspModifier::PostIncrementModulo)),
-            "r2+!" => Some(SspPointerRegister::R2(SspModifier::PostIncrementModulo)),
-            "r4+!" => Some(SspPointerRegister::R4(SspModifier::PostIncrementModulo)),
-            "r5+!" => Some(SspPointerRegister::R5(SspModifier::PostIncrementModulo)),
-            "r6+!" => Some(SspPointerRegister::R6(SspModifier::PostIncrementModulo)),
+            "r0+!" => Some(SspPointerRegister::R0(SspModifier::PostIncrement)),
+            "r1+!" => Some(SspPointerRegister::R1(SspModifier::PostIncrement)),
+            "r2+!" => Some(SspPointerRegister::R2(SspModifier::PostIncrement)),
+            "r4+!" => Some(SspPointerRegister::R4(SspModifier::PostIncrement)),
+            "r5+!" => Some(SspPointerRegister::R5(SspModifier::PostIncrement)),
+            "r6+!" => Some(SspPointerRegister::R6(SspModifier::PostIncrement)),
 
             // RAM Bank accesses
             "r3|00" => Some(SspPointerRegister::R3(SspModifier::Bank0)),
@@ -273,27 +273,27 @@ mod pointer_registers_tests {
         );
         assert_eq!(
             SspPointerRegister::new("r0+"),
-            Some(SspPointerRegister::R0(SspModifier::PostIncrement))
+            Some(SspPointerRegister::R0(SspModifier::PostIncrementModulo))
         );
         assert_eq!(
             SspPointerRegister::new("r1+"),
-            Some(SspPointerRegister::R1(SspModifier::PostIncrement))
+            Some(SspPointerRegister::R1(SspModifier::PostIncrementModulo))
         );
         assert_eq!(
             SspPointerRegister::new("r2+"),
-            Some(SspPointerRegister::R2(SspModifier::PostIncrement))
+            Some(SspPointerRegister::R2(SspModifier::PostIncrementModulo))
         );
         assert_eq!(
             SspPointerRegister::new("r4+"),
-            Some(SspPointerRegister::R4(SspModifier::PostIncrement))
+            Some(SspPointerRegister::R4(SspModifier::PostIncrementModulo))
         );
         assert_eq!(
             SspPointerRegister::new("r5+"),
-            Some(SspPointerRegister::R5(SspModifier::PostIncrement))
+            Some(SspPointerRegister::R5(SspModifier::PostIncrementModulo))
         );
         assert_eq!(
             SspPointerRegister::new("r6+"),
-            Some(SspPointerRegister::R6(SspModifier::PostIncrement))
+            Some(SspPointerRegister::R6(SspModifier::PostIncrementModulo))
         );
         assert_eq!(
             SspPointerRegister::new("r0-"),
@@ -321,27 +321,27 @@ mod pointer_registers_tests {
         );
         assert_eq!(
             SspPointerRegister::new("r0+!"),
-            Some(SspPointerRegister::R0(SspModifier::PostIncrementModulo))
+            Some(SspPointerRegister::R0(SspModifier::PostIncrement))
         );
         assert_eq!(
             SspPointerRegister::new("r1+!"),
-            Some(SspPointerRegister::R1(SspModifier::PostIncrementModulo))
+            Some(SspPointerRegister::R1(SspModifier::PostIncrement))
         );
         assert_eq!(
             SspPointerRegister::new("r2+!"),
-            Some(SspPointerRegister::R2(SspModifier::PostIncrementModulo))
+            Some(SspPointerRegister::R2(SspModifier::PostIncrement))
         );
         assert_eq!(
             SspPointerRegister::new("r4+!"),
-            Some(SspPointerRegister::R4(SspModifier::PostIncrementModulo))
+            Some(SspPointerRegister::R4(SspModifier::PostIncrement))
         );
         assert_eq!(
             SspPointerRegister::new("r5+!"),
-            Some(SspPointerRegister::R5(SspModifier::PostIncrementModulo))
+            Some(SspPointerRegister::R5(SspModifier::PostIncrement))
         );
         assert_eq!(
             SspPointerRegister::new("r6+!"),
-            Some(SspPointerRegister::R6(SspModifier::PostIncrementModulo))
+            Some(SspPointerRegister::R6(SspModifier::PostIncrement))
         );
         assert_eq!(
             SspPointerRegister::new("r3|00"),

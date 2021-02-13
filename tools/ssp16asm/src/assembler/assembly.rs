@@ -18,7 +18,11 @@ const MAX_BINARY_SIZE_4M: u64 = 0x400000;
 
 pub fn extract_tables<'a>(
     tokens: &Vec<tokens::Token<'a>>,
-) -> (HashMap<&'a str, u16>, HashMap<&'a str, u16>, HashMap<&'a str, u8>) {
+) -> (
+    HashMap<&'a str, u16>,
+    HashMap<&'a str, u16>,
+    HashMap<&'a str, u8>,
+) {
     let mut current_address: u16 = 0;
     let mut current_org: bool = false;
     let mut current_dw: bool = false;
@@ -324,10 +328,11 @@ pub fn generate_opcodes<'a>(
             tokens::Token::Operator(operators::SspOperator::LabelRef(label))
                 if equbs.contains_key(label) =>
             {
-                equbs.get(label)
+                equbs
+                    .get(label)
                     .map(|value| tokens::Token::Operator(operators::SspOperator::Byte(*value)))
                     .unwrap_or_else(|| proper_token)
-            }   
+            }
 
             _ => proper_token,
         };

@@ -9,10 +9,10 @@ use clap::App;
 use assembler::assembly;
 use std::collections::HashMap;
 use std::error::Error;
+use std::fmt;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::fmt;
 use tokenization::tokens;
 
 pub struct Config {

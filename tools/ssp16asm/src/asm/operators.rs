@@ -425,37 +425,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("r0+"),
             Some(SspOperator::Ptr(SspPointerRegister::R0(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r1+"),
             Some(SspOperator::Ptr(SspPointerRegister::R1(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r2+"),
             Some(SspOperator::Ptr(SspPointerRegister::R2(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r4+"),
             Some(SspOperator::Ptr(SspPointerRegister::R4(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r5+"),
             Some(SspOperator::Ptr(SspPointerRegister::R5(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r6+"),
             Some(SspOperator::Ptr(SspPointerRegister::R6(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
@@ -497,37 +497,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("r0+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R0(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r1+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R1(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r2+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R2(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r4+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R4(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r5+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R5(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r6+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R6(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
@@ -617,37 +617,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("(r0+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R0(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r1+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R1(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r2+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R2(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r4+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R4(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r5+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R5(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r6+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R6(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
@@ -689,37 +689,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("(r0+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R0(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r1+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R1(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r2+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R2(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r4+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R4(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r5+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R5(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r6+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R6(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
@@ -826,37 +826,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("((r0+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R0(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r1+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R1(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r2+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R2(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r4+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R4(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r5+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R5(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r6+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R6(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
@@ -898,37 +898,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("((r0+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R0(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r1+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R1(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r2+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R2(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r4+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R4(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r5+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R5(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r6+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R6(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(

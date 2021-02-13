@@ -10,3 +10,4 @@ Cargo.lock
 !samples/SVP_tests/rom/rom_svp.bin
 *.bin.hex
 *.dat
+*.lst
