@@ -778,6 +778,15 @@ impl<'a> Instruction<'a> {
                 value,
             )),
 
+            (
+                Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
+                Some(tokens::Token::Operator(operators::SspOperator::Reg(dst))),
+                Some(tokens::Token::Operator(operators::SspOperator::Word(value))),
+            ) => Ok(Instruction::opcodes_with_base_and_imm_value(
+                vec![0x8, dst.value() << 4],
+                value,
+            )),
+
             // LD d, ((ri))
             (
                 Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
@@ -801,25 +810,53 @@ impl<'a> Instruction<'a> {
                 value,
             )),
 
-            // LD addr, a
             (
                 Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
-                Some(tokens::Token::Operator(operators::SspOperator::Word(addr))),
-                Some(tokens::Token::Operator(operators::SspOperator::Reg(
-                    registers::SspGeneralRegister::A,
-                ))),
-            ) => Ok(vec![
-                0xE + (((addr & 0x100) >> 8) as u8),
-                (addr & 0xFF) as u8,
-            ]),
+                Some(tokens::Token::Operator(operators::SspOperator::PtrRef(dst))),
+                Some(tokens::Token::Operator(operators::SspOperator::Word(value))),
+            ) => Ok(Instruction::opcodes_with_base_and_imm_value(
+                vec![
+                    0xC + dst.ram_bank(),
+                    (dst.modifier_value() << 2) + dst.value(),
+                ],
+                value,
+            )),
 
+            // LD A[addr], a
             (
                 Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
-                Some(tokens::Token::Operator(operators::SspOperator::Byte(addr))),
+                Some(tokens::Token::Operator(operators::SspOperator::RamBankAddressA(addr))),
                 Some(tokens::Token::Operator(operators::SspOperator::Reg(
                     registers::SspGeneralRegister::A,
                 ))),
-            ) => Ok(vec![0xE, addr]),
+            ) => Ok(vec![0xE, (addr & 0xFF) as u8]),
+
+            // LD B[addr], a
+            (
+                Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
+                Some(tokens::Token::Operator(operators::SspOperator::RamBankAddressB(addr))),
+                Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                    registers::SspGeneralRegister::A,
+                ))),
+            ) => Ok(vec![0xF, (addr & 0xFF) as u8]),
+
+            // LD a, A[addr]
+            (
+                Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
+                Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                    registers::SspGeneralRegister::A,
+                ))),
+                Some(tokens::Token::Operator(operators::SspOperator::RamBankAddressA(addr))),
+            ) => Ok(vec![0x6, (addr & 0xFF) as u8]),
+
+            // LD a, B[addr]
+            (
+                Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
+                Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                    registers::SspGeneralRegister::A,
+                ))),
+                Some(tokens::Token::Operator(operators::SspOperator::RamBankAddressB(addr))),
+            ) => Ok(vec![0x7, (addr & 0xFF) as u8]),
 
             // LD d, ri
             (
@@ -844,6 +881,12 @@ impl<'a> Instruction<'a> {
             // LDI ri, simm
             (
                 Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Immediate)),
+                Some(tokens::Token::Operator(operators::SspOperator::Ptr(dst))),
+                Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
+            ) => Ok(vec![0x18 + (dst.ram_bank() << 2) + dst.value(), value]),
+
+            (
+                Some(mnemonics::SspMnemonic::Ld(mnemonics::SspMnemonicModifier::Reference)),
                 Some(tokens::Token::Operator(operators::SspOperator::Ptr(dst))),
                 Some(tokens::Token::Operator(operators::SspOperator::Byte(value))),
             ) => Ok(vec![0x18 + (dst.ram_bank() << 2) + dst.value(), value]),
@@ -1504,15 +1547,33 @@ mod opcode_tests {
             ))),
         };
         check_inst(&inst, &vec![0x08, 0x10, 0x50, 0x50]);
+        inst.mnemonic = Some(mnemonics::SspMnemonic::Ld(
+            mnemonics::SspMnemonicModifier::Reference,
+        ));
+        check_inst(&inst, &vec![0x08, 0x10, 0x50, 0x50]);
+        inst.mnemonic = Some(mnemonics::SspMnemonic::Ld(
+            mnemonics::SspMnemonicModifier::Immediate,
+        ));
 
         inst.op1 = Some(tokens::Token::Operator(operators::SspOperator::Reg(
             registers::SspGeneralRegister::A,
         )));
         check_inst(&inst, &vec![0x08, 0x30, 0x50, 0x50]);
+        inst.mnemonic = Some(mnemonics::SspMnemonic::Ld(
+            mnemonics::SspMnemonicModifier::Reference,
+        ));
+        check_inst(&inst, &vec![0x08, 0x30, 0x50, 0x50]);
+        inst.mnemonic = Some(mnemonics::SspMnemonic::Ld(
+            mnemonics::SspMnemonicModifier::Immediate,
+        ));
 
         inst.op1 = Some(tokens::Token::Operator(operators::SspOperator::Reg(
             registers::SspGeneralRegister::Ext6,
         )));
+        check_inst(&inst, &vec![0x08, 0xE0, 0x50, 0x50]);
+        inst.mnemonic = Some(mnemonics::SspMnemonic::Ld(
+            mnemonics::SspMnemonicModifier::Reference,
+        ));
         check_inst(&inst, &vec![0x08, 0xE0, 0x50, 0x50]);
     }
 
@@ -1588,24 +1649,46 @@ mod opcode_tests {
     }
 
     #[test]
-    fn check_ld_addr_a() {
+    fn check_ld_ram_bank_addr_a() {
         let mut inst = Instruction {
             mnemonic: Some(mnemonics::SspMnemonic::Ld(
                 mnemonics::SspMnemonicModifier::Reference,
             )),
-            op1: Some(tokens::Token::Operator(operators::SspOperator::Word(
-                0x0050,
-            ))),
+            op1: Some(tokens::Token::Operator(
+                operators::SspOperator::RamBankAddressA(0x50),
+            )),
             op2: Some(tokens::Token::Operator(operators::SspOperator::Reg(
                 registers::SspGeneralRegister::A,
             ))),
         };
         check_inst(&inst, &vec![0x0E, 0x50]);
 
-        inst.op1 = Some(tokens::Token::Operator(operators::SspOperator::Word(
-            0x0150,
-        )));
+        inst.op1 = Some(tokens::Token::Operator(
+            operators::SspOperator::RamBankAddressB(0x50),
+        ));
         check_inst(&inst, &vec![0x0F, 0x50]);
+    }
+
+    #[test]
+    fn check_ld_a_ram_bank_addr() {
+        let mut inst = Instruction {
+            mnemonic: Some(mnemonics::SspMnemonic::Ld(
+                mnemonics::SspMnemonicModifier::Reference,
+            )),
+            op1: Some(tokens::Token::Operator(operators::SspOperator::Reg(
+                registers::SspGeneralRegister::A,
+            ))),
+            op2: Some(tokens::Token::Operator(
+                operators::SspOperator::RamBankAddressA(0x50),
+            )),
+        };
+        check_inst(&inst, &vec![0x06, 0x50]);
+
+        inst.op2 = Some(tokens::Token::Operator(
+            operators::SspOperator::RamBankAddressB(0x50),
+        ));
+
+        check_inst(&inst, &vec![0x07, 0x50]);
     }
 
     #[test]
@@ -1687,7 +1770,7 @@ mod opcode_tests {
 
     #[test]
     fn check_ld_r_ref_a() {
-        let inst = Instruction {
+        let mut inst = Instruction {
             mnemonic: Some(mnemonics::SspMnemonic::Ld(
                 mnemonics::SspMnemonicModifier::Reference,
             )),
@@ -1699,6 +1782,12 @@ mod opcode_tests {
             )),
         };
         check_inst(&inst, &vec![0x4A, 0x10]);
+
+        inst.op1 = Some(tokens::Token::Operator(operators::SspOperator::Reg(
+            registers::SspGeneralRegister::Pc,
+        )));
+
+        check_inst(&inst, &vec![0x4A, 0x60]);
     }
 
     #[test]

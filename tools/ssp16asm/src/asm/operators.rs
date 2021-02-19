@@ -198,6 +198,8 @@ pub enum SspOperator<'a> {
     PtrRef(SspPointerRegister),
     PtrDoubleRef(SspPointerRegister),
     PtrAccumulator,
+    RamBankAddressA(u8),
+    RamBankAddressB(u8),
     Condition(SspMnemonicCondition),
     ConditionFlag(SspMnemonicConditionFlag),
     FlagOperation(SspMnemonicFlagOperation),
@@ -224,6 +226,24 @@ impl<'a> SspOperator<'a> {
                     Some(preg) => Some(SspOperator::PtrRef(preg)),
                     None if op == "(a)" => Some(SspOperator::PtrAccumulator), // Special case
                     None => None,
+                }
+            }
+
+            // References to RAM bank A
+            _ if op.starts_with("A[") => {
+                let raw_addr = op.trim_start_matches("A[").trim_end_matches("]");
+                match u8::from_str_radix(raw_addr.trim_start_matches("0x"), 16) {
+                    Ok(num) => Some(SspOperator::RamBankAddressA(num)),
+                    Err(_) => None,
+                }
+            }
+
+            // References to RAM bank B
+            _ if op.starts_with("B[") => {
+                let raw_addr = op.trim_start_matches("B[").trim_end_matches("]");
+                match u8::from_str_radix(raw_addr.trim_start_matches("0x"), 16) {
+                    Ok(num) => Some(SspOperator::RamBankAddressB(num)),
+                    Err(_) => None,
                 }
             }
 
@@ -293,6 +313,12 @@ impl<'a> fmt::Debug for SspOperator<'a> {
             SspOperator::Ptr(reg) => write!(f, "SspOperator(Ptr({:?}))", reg),
             SspOperator::PtrRef(reg) => write!(f, "SspOperator(PtrRef({:?}))", reg),
             SspOperator::PtrDoubleRef(reg) => write!(f, "SspOperator(PtrDoubleRef({:?}))", reg),
+            SspOperator::RamBankAddressA(addr) => {
+                write!(f, "SspOperator(RamBankAddressA({:?}))", addr)
+            }
+            SspOperator::RamBankAddressB(addr) => {
+                write!(f, "SspOperator(RamBankAddressB({:?}))", addr)
+            }
             SspOperator::PtrAccumulator => write!(f, "SspOperator(PtrAccumulator)"),
             SspOperator::Condition(cond) => write!(f, "SspOperator(Condition({:?}))", cond),
             SspOperator::ConditionFlag(flag) => write!(f, "SspOperator(ConditionFlag({:?}))", flag),
@@ -425,37 +451,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("r0+"),
             Some(SspOperator::Ptr(SspPointerRegister::R0(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r1+"),
             Some(SspOperator::Ptr(SspPointerRegister::R1(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r2+"),
             Some(SspOperator::Ptr(SspPointerRegister::R2(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r4+"),
             Some(SspOperator::Ptr(SspPointerRegister::R4(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r5+"),
             Some(SspOperator::Ptr(SspPointerRegister::R5(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("r6+"),
             Some(SspOperator::Ptr(SspPointerRegister::R6(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
@@ -497,37 +523,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("r0+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R0(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r1+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R1(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r2+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R2(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r4+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R4(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r5+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R5(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("r6+!"),
             Some(SspOperator::Ptr(SspPointerRegister::R6(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
@@ -617,37 +643,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("(r0+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R0(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r1+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R1(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r2+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R2(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r4+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R4(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r5+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R5(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("(r6+)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R6(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
@@ -689,37 +715,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("(r0+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R0(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r1+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R1(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r2+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R2(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r4+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R4(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r5+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R5(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("(r6+!)"),
             Some(SspOperator::PtrRef(SspPointerRegister::R6(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
@@ -826,37 +852,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("((r0+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R0(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r1+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R1(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r2+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R2(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r4+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R4(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r5+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R5(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
             SspOperator::new("((r6+))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R6(
-                SspModifier::PostIncrementModulo
+                SspModifier::PostIncrement
             )))
         );
         assert_eq!(
@@ -898,37 +924,37 @@ mod pointer_registers_tests {
         assert_eq!(
             SspOperator::new("((r0+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R0(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r1+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R1(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r2+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R2(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r4+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R4(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r5+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R5(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
             SspOperator::new("((r6+!))"),
             Some(SspOperator::PtrDoubleRef(SspPointerRegister::R6(
-                SspModifier::PostIncrement
+                SspModifier::PostIncrementModulo
             )))
         );
         assert_eq!(
@@ -979,6 +1005,61 @@ mod pointer_registers_tests {
                 SspModifier::Bank3
             )))
         );
+    }
+}
+
+#[cfg(test)]
+mod ram_bank_addresses_tests {
+    use super::*;
+
+    #[test]
+    fn check_valid_ram_bank_address_a() {
+        assert_eq!(
+            SspOperator::new("A[10]"),
+            Some(SspOperator::RamBankAddressA(16))
+        );
+
+        assert_eq!(
+            SspOperator::new("A[0x10]"),
+            Some(SspOperator::RamBankAddressA(16))
+        );
+
+        assert_eq!(
+            SspOperator::new("A[0xFF]"),
+            Some(SspOperator::RamBankAddressA(255))
+        );
+    }
+
+    #[test]
+    fn check_invalid_ram_bank_address_a() {
+        assert_eq!(SspOperator::new("A[]"), None);
+
+        assert_eq!(SspOperator::new("A[0x100]"), None);
+    }
+
+    #[test]
+    fn check_valid_ram_bank_address_b() {
+        assert_eq!(
+            SspOperator::new("B[10]"),
+            Some(SspOperator::RamBankAddressB(16))
+        );
+
+        assert_eq!(
+            SspOperator::new("B[0x10]"),
+            Some(SspOperator::RamBankAddressB(16))
+        );
+
+        assert_eq!(
+            SspOperator::new("B[0xFF]"),
+            Some(SspOperator::RamBankAddressB(255))
+        );
+    }
+
+    #[test]
+    fn check_invalid_ram_bank_address_b() {
+        assert_eq!(SspOperator::new("B[]"), None);
+
+        assert_eq!(SspOperator::new("B[0x100]"), None);
     }
 }
 

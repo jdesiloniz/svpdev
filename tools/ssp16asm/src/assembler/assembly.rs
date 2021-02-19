@@ -115,12 +115,45 @@ pub fn extract_tables<'a>(
                 }
 
                 (
-                    tokens::Token::Operator(operators::SspOperator::Word(_)),
+                    tokens::Token::Operator(operators::SspOperator::RamBankAddressA(_)),
                     Some(tokens::Token::Mnemonic(mnemonics::SspMnemonic::Ld(
                         mnemonics::SspMnemonicModifier::Reference,
                     ))),
                 ) => {
-                    // Special case for LD addr, a
+                    // LD A[addr], A should be just size 1 instruction
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Operator(operators::SspOperator::RamBankAddressB(_)),
+                    Some(tokens::Token::Mnemonic(mnemonics::SspMnemonic::Ld(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    ))),
+                ) => {
+                    // LD B[addr], A should be just size 1 instruction
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::Ld(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    )),
+                    Some(tokens::Token::Operator(operators::SspOperator::RamBankAddressA(_))),
+                ) => {
+                    // LD A, A[addr] should be just size 1 instruction
+                    current_mnemonic = None;
+                    0
+                }
+
+                (
+                    tokens::Token::Mnemonic(mnemonics::SspMnemonic::Ld(
+                        mnemonics::SspMnemonicModifier::Reference,
+                    )),
+                    Some(tokens::Token::Operator(operators::SspOperator::RamBankAddressB(_))),
+                ) => {
+                    // LD A, B[addr] should be just size 1 instruction
                     current_mnemonic = None;
                     0
                 }
@@ -384,6 +417,8 @@ pub fn generate_opcodes<'a>(
                 binary[current_address as usize] = bytes[0];
                 binary[(current_address + 1) as usize] = bytes[1];
                 current_address += 2;
+
+                current_operation = None;
             }
 
             // Dw byte will write a word either way (introduced for compatibility reasons)

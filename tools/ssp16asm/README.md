@@ -49,18 +49,19 @@ Six arithmetic operations (`sub`,`cmp`, `add`, `and`, `or`, `eor`) can be applie
 
 #### Load instructions
 
-There's only one load opcode (`LD`). As with the arithmetic instructions, `LD` can also be used with numeric values. In that case, the suffix `i` is also applied. For load instructions only words are allowed:
+There's only one load opcode (`LD`). As with the arithmetic instructions, `LD` can also be used with numeric values. For load instructions only words are allowed:
 
-* `LDI A, 0009`.
-* `LDI A, 8080`.
+* `LD A, 0009`.
+* `LD A, 8080`.
 
 Except when the other operand is a byte register:
 
-* `LDI R0, 0F`.
+* `LD R0, 0F`.
 
-There's a special case: `LDI addr, value` referring to a bank memory address (byte-size address) requires a word, i.e.:
+Loads can also use addresses in RAM banks A or B within the DSP, for those cases `A[addr]` or `B[addr]` syntax is used (`addr` being a 8-bit number). These addresses can be used as source or destination operand, as long as the other operand is always the **accumulator** register:
 
-* `LDI addr, A` (i.e.: `LDI 1FF, A` - the 9th bit of the word is used to determine which RAM bank the address refers to).
+* `LD A[0x0A], A`
+* `LD A, B[0xFF]`
 
 #### DSP instructions
 
@@ -82,16 +83,12 @@ This family of DSP comes with two main types of registers: general and pointer r
 
 Those can be referred to directly (by just specifying the name of the register), with a first level of indirection expressed with a single set of parenthesis and a second level being express as a double set of parenthesis.
 
-Also some indirections can include modifying the value of the register itself by incrementing (`+!`), modulo-incrementing (`+`), modulo-decreasing it (`-!`). Two of the pointer registers (`R3` and `R7`) can also be directly addressed by using these four modifiers: `|00`, `|01`, `|02`, `|03`.
+Indirections can also modify the value of the register itself by incrementing (`+`), modulo-incrementing (`+!`), modulo-decreasing it (`-!`) in registers `R0`, `R1`, `R2`, `R4`, `R5` and `R6`. Two of the pointer registers (`R3` and `R7`) have a different indirection mode: they always contain the value 0, but can be directly addressed by using these four modifiers: `|00`, `|01`, `|10`, `|11` - that is: to access first, second, third or fourth position within each memory bank (they're meant to be used as a software stack).
 
 * `LD R0, X`
 * `LD (R0!+), Y`.
 * `LD A, ((R2))`.
 * `LD B, (R7|01)`.
-
-#### Addressing mode format note
-
-There are conflicts regarding post-increment addressing modes in current existing sources. **Notaz** refers to `(r0+)` as modulo-incrementing, and `(r0+!)` as a simple post-increment (unaffected by **ST** register). But **Tasco Deluxe** (and existing disassemblies of Virtua Racing) refer as those in the opposite way: `(r0+)` as a simple post-increment, and `(r0+!)` as modulo-increment. Even though the format seems more consistent in **Notaz**'s documentation (modulo-increment and modulo-decrement not sporting any extra bangs), this assembly follows **Tasco**'s notations to agree with the format followed by current disassemblies.
 
 ### Operands
 
@@ -120,9 +117,9 @@ A label is expressed by a string followed by a colon sign (i.e.: `label_name:`).
 
 ## Compatibility
 
-This assembler was built with the intention of being used to test an FPGA-based implementation of the SSP1601 DSP found inside the Mega Drive/Genesis version of Virtua Racing. There's also quite a lack of proper information on this family of DSPs (with the exception of all the reverse engineering done to Virtua Racing during the past decade), so there may be compatibility issues between different versions of the core. If you have further information about the different models, please feel free to let me know so we can have the most complete assembler possible for this family of devices :).
+This assembler was originally built with the intention of being used to test an FPGA-based implementation of the SSP1601 DSP found inside the Mega Drive/Genesis version of Virtua Racing. As it was built quickly to perform simple tests, expect its use to be a little bit quirky. Now that the door has opened to proper development using the actual SVP chip, expect improvements in the future. 
 
-It also tries to follow the style that the original Samsung SSP16xx assembler used (as seen in their samples), with some exceptions (`EQUB` for byte constants instead of `EQU`). So most of these samples should build with this assembler needing just minimal changes.
+There's also quite a lack of proper information on this family of DSPs (with the exception of all the reverse engineering done to Virtua Racing during the past decade), so there may be compatibility issues between different versions of the core. If you have further information about the different models, please feel free to let me know so we can have the most complete assembler possible for this family of devices :).
 
 ## Code style
 
