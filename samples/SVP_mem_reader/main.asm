@@ -67,9 +67,9 @@
 SVP_PaddingStart:
 
 	DCB.b 0x1FFF4-SVP_PaddingStart,0x00
-	DC.l  0xDEADBEEF
-	DC.l  0xDEADBEEF
-	DC.l  0xDEADBEEF
+	DC.l  0xDEADBEEF			; Added as a silly test to verify that
+	DC.l  0xDEADBEEF			; ROM content wasn't seen from the program
+	DC.l  0xDEADBEEF			; view inside SVP, but the actual internal code.
 
 	include 'constants.asm'		; Constants
 	include 'macros.asm'		; VDP macros
