@@ -13,6 +13,10 @@ A collection of development tools targetting SEGA's SVP chip found in the Mega D
 - Be able to run arbitrary code on the real SVP chip in order to research many unknowns in its behavior, and document these.
 - Allow an "easy" access for people interested in this piece of videogame history to run code on it too, whether it's additional research, demos or actual new games (looking forward to it!).
 
+# Documentation
+
+All the research done with this project is intended to give more information about the SVP chip to allow the retrodev community to create homebrew (and run it in real hardware). As some parts of this chip are still unclear, further developments and information will be updated in the [wiki](https://github.com/jdesiloniz/svpdev/wiki) of this repository.
+
 ## License
 
 This code is MIT-licensed. Also take into account the following conditions of use:
