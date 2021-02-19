@@ -107,8 +107,8 @@ ROM_Start:
 ;**********************************************************************
 	dc.b "SEGA MEGA DRIVE "                                 ; Console name
 	dc.b "Javi Taiyou     "                                 ; Copyright holder and release date
-	dc.b "SVP ROM TEST                                    " ; Domestic name
-	dc.b "SVP ROM TEST                                    " ; International name
+	dc.b "SVP MEM BROWSER                                 " ; Domestic name
+	dc.b "SVP MEM BROWSER                                 " ; International name
 	dc.b "GM MK-1229 -00"                                   ; Version number - need to use the original from Virtua Racing for compatibility with MiSTer
 	dc.w 0x0000                                             ; Checksum
 	dc.b "J               "                                 ; I/O support

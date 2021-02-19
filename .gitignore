@@ -8,6 +8,7 @@ Cargo.lock
 *.bin
 !samples/SVP_basic_gfx/rom/rom_svp.bin
 !samples/SVP_tests/rom/rom_svp.bin
+!samples/SVP_mem_reader/rom/rom_svp.bin
 *.bin.hex
 *.dat
 *.lst

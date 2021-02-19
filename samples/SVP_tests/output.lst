@@ -10,12 +10,12 @@
 00000000                            ;
 00000000                            ; You can assemble the M68000 part of this sample with `SNASM68K.EXE`:
 00000000                            ;
-00000000                            ;    SNASM68K.EXE /p main.asm,main.map,main.lst,output.bin
+00000000                            ;    SNASM68K.EXE /p main.asm,output.map,output.lst,output.bin
 00000000                            ;
 00000000                            ; main.asm = this source file
 00000000                            ; output.bin = Mega Drive/Genesis part of this ROM, to be later used by the SSP16xx (SVP) assembler.
-00000000                            ; main.lst = listing file, shows assembled addresses alongside your source code (useful for debugging).
-00000000                            ; main.map = symbol map file for linking (unused)
+00000000                            ; output.lst = listing file, shows assembled addresses alongside your source code (useful for debugging).
+00000000                            ; output.map = symbol map file for linking (unused)
 00000000                            ;
 00000000                            ; The M68000 part of the binary needs to be later fed up to the SSP16xx assembler to build
 00000000                            ; the SVP part of the code on top of it. You can download it from: 
@@ -24,7 +24,7 @@
 00000000                            ;
 00000000                            ; To assemble the SVP part and generate the final ROM:
 00000000                            ;
-00000000                            ; ssp16asm -b output.bin svp_gfx.svp rom_svp.bin
+00000000                            ; ssp16asm -b output.bin tests.svp rom_svp.bin
 00000000                            ;
 00000000                            ; svp_gfx.svp = source containing the SVP part of this sample.
 00000000                            ; output.bin = M68000 binary file.
@@ -59,20 +59,20 @@
 00000000                            ; A label defining the start of ROM so we can compute the total size.
 00000000                            ROM_Start:
 00000000                            
-00000000                            ;==============================================================
+00000000                            ;**************************************************************
 00000000                            ; CPU VECTOR TABLE
-00000000                            ;==============================================================
+00000000                            ;**************************************************************
 00000000                            ; A table of addresses that the CPU needs to know about -
 00000000                            ; things like stack address, "main()" function address,
 00000000                            ; vertical/horizontal interrupt addresses, etc.
-00000000                            ;==============================================================
+00000000                            ;**************************************************************
 00000000                            ; For any interrupts we don't want to handle in this demo,
 00000000                            ; we specify INT_Null (an interrupt at the bottom of the
 00000000                            ; file that doesn't do anything).
-00000000                            ;==============================================================
+00000000                            ;**************************************************************
 00000000                            ; This must be the very first thing in the ROM, since the CPU
 00000000                            ; reads it from 0x0000 on bootup.
-00000000                            ;==============================================================
+00000000                            ;**************************************************************
 00000000 00FF E000                  	dc.l   0x00FFE000			; Initial stack pointer value
 00000004 0000 0000                  	dc.l   CPU_EntryPoint		; Start of program
 00000008 0000 0000                  	dc.l   CPU_Exception 		; Bus error
@@ -138,19 +138,31 @@
 000000F8 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
 000000FC 0000 0000                  	dc.l   INT_Null				; Unused (reserved)
 00000100                            	
-00000100                            ;==============================================================
+00000100                            ;**********************************************************************
 00000100                            ; SEGA MEGA DRIVE ROM HEADER
-00000100                            ;==============================================================
+00000100                            ;**********************************************************************
 00000100                            ; A structure that specifies some metadata about the ROM, like
 00000100                            ; its name, author, version number, release date, region,
 00000100                            ; and any special peripherals used.
 00000100                            ; Note that the Mega Drive console itself doesn't read any of
 00000100                            ; this, it's more a convenience for the programmer, but
 00000100                            ; most emulators will read the title and region.
-00000100                            ;==============================================================
+00000100                            ;**********************************************************************
 00000100                            ; If your emulator doesn't show the correct ROM name, then this
 00000100                            ; table is in the wrong place or in the wrong format.
-00000100                            ;==============================================================
+00000100                            ;**********************************************************************
+00000100                            ; It's not required for execution on hardware (still unconfirmed),
+00000100                            ; but emulators that support SVP emulation use part of these fields
+00000100                            ; to detect Virtua Racing and thus start the emulated DSP:
+00000100                            ;
+00000100                            ; - MiSTer relies on the the Version number field to be GM MK-1229
+00000100                            ; - KEGA uses the notes field, originally in Shift-JIS.
+00000100                            ;
+00000100                            ; If you want emulators to support this ROM, please don't change these
+00000100                            ; (unless these are updated to give developers the option to enable 
+00000100                            ; SVP support manually.)
+00000100                            ;
+00000100                            ;**********************************************************************
 00000100 5345 4741 204D 4547 4120+  	dc.b "SEGA MEGA DRIVE "                                 ; Console name
 00000110 4A61 7669 2054 6169 796F+  	dc.b "Javi Taiyou     "                                 ; Copyright holder and release date
 00000120 5356 5020 524F 4D20 5445+  	dc.b "SVP ROM TEST                                    " ; Domestic name
@@ -168,8 +180,9 @@
 000001BC 0000 0000                  	dc.l 0x00000000                                         ; End address of SRAM
 000001C0 0000 0000                  	dc.l 0x00000000                                         ; Unused
 000001C4 0000 0000                  	dc.l 0x00000000                                         ; Unused
-000001C8 5356 0000                  	dc.l 0x53560000											; Virtua Racing ROM header has some notes, KEGA uses these to detect SVP:
-000001CC 2000 0400                  	dc.l 0x20000400
+000001C8 5356 0000                  	dc.l 0x53560000											; Security check to pass SVP boot-up process
+000001CC 2000                       	dc.w 0x2000
+000001CE 0400                       	dc.w 0x0400												; Code entry point at 0400
 000001D0 2020 2020                  	dc.l 0x20202020
 000001D4 2020 2020                  	dc.l 0x20202020
 000001D8 2020 2020                  	dc.l 0x20202020
@@ -1192,7 +1205,6 @@
 000200E2                            
 000200E2                            ; Horizontal interrupt - run once per N scanlines (N = specified in VDP register 0xA)
 000200E2                            INT_HInterrupt:
-000200E2                            	; Doesn't do anything in this demo
 000200E2 4E73                       	rte
 000200E4                            
 000200E4                            ; NULL interrupt - for interrupts we don't care about
@@ -1208,9 +1220,9 @@
 000200FC                            
 000200FC 4E73                       	rte
 000200FE                            	
-000200FE                            ;==============================================================
-000200FE                            ; STRINGS + TEXT POSITIONS
-000200FE                            ;==============================================================
+000200FE                            ;******************************
+000200FE                            ; Strings and Text coordinates
+000200FE                            ;******************************
 000200FE                            StringTitle:
 000200FE 5356 5020 5445 5354 2052+  	dc.b "SVP TEST ROM",0
 0002010B                            StringCommTestTitle:

@@ -33,16 +33,16 @@ org 400                 # SVP code always starts at address 0x400 (0x800 in the 
 
 init:	                # Clear registers
                         eor a, a
-                        ldi x, 0000
-                        ldi y, 0000
-                        ldi st, 0000
+                        ld x, 0000
+                        ld y, 0000
+                        ld st, 0000
 
 wait_for_megadrive:     
                         ld a, ext0                      # Retrieve data from XST_State register
                         andi 0x2                        # Check if bit 1 is active (MD has written into XST)
                         bra z=1, @wait_for_megadrive    # If not, keep waiting for a command!
                         
-                        ldi r0, 0                       # Set up bank memory address 0 in register r0
+                        ld r0, 0                       # Set up bank memory address 0 in register r0
                         ld x, ext3                      # Read color value sent by the Mega Drive/Genesis in XST.
                         ld (r0), x                      # Store color value in bank #0 address 00
 
@@ -67,12 +67,12 @@ memory_access_setup:
                         # potentially it'll run faster (not having to "fight" with the Mega Drive/Genesis for
                         # access to the ROM). But this being a sample let's keep it simple :).
 
-		        ldi ext6, 0FFF		# Load address part1 for 0x181000 (0x180FFF + 1)      
-		        ldi ext6, 0818		# Load address part2 for 0x181000, auto-increment set to 1
+		        ld ext6, 0FFF		# Load address part1 for 0x181000 (0x180FFF + 1)      
+		        ld ext6, 0818		# Load address part2 for 0x181000, auto-increment set to 1
 		        ld ext4, -	        # Programming ext4/PM4 for writes
 
 tile_data_loops_setup:
-                        ldi y, 0x0400           # Tile counter - 64 tiles total x 16 words = 1024/0x400
+                        ld y, 0x0400           # Tile counter - 64 tiles total x 16 words = 1024/0x400
                         ld a, y
 
 tile_data_gen_outer_loop:
@@ -126,6 +126,6 @@ let_megadrive_know_were_done:
                         # We generated all pixels for our framebuffer, let Mega Drive/Genesis know
                         # (by writing a random word to the XST register) and go back to our initial wait loop:
 
-                        ldi ext3, 0x1010        # Write a warning so the MD can know we're done writing the tile data
+                        ld ext3, 0x1010        # Write a warning so the MD can know we're done writing the tile data
                         bra always, @init
 

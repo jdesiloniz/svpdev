@@ -12,17 +12,17 @@
 00000000                            ;
 00000000                            ; You can assemble the M68000 part of this sample with `SNASM68K.EXE`:
 00000000                            ;
-00000000                            ;    SNASM68K.EXE /p main.asm,main.map,main.lst,output.bin
+00000000                            ;    SNASM68K.EXE /p main.asm,output.map,output.lst,output.bin
 00000000                            ;
 00000000                            ; main.asm = this source file
 00000000                            ; output.bin = Mega Drive/Genesis part of this ROM, to be later used by the SSP16xx (SVP) assembler.
-00000000                            ; main.lst = listing file, shows assembled addresses alongside your source code (useful for debugging).
-00000000                            ; main.map = symbol map file for linking (unused)
+00000000                            ; output.lst = listing file, shows assembled addresses alongside your source code (useful for debugging).
+00000000                            ; output.map = symbol map file for linking (unused)
 00000000                            ;
 00000000                            ; The M68000 part of the binary needs to be later fed up to the SSP16xx assembler to build
 00000000                            ; the SVP part of the code on top of it. You can download it from: 
 00000000                            ;
-00000000                            ; https://github.com/jdesiloniz/ssp16asm
+00000000                            ; https://github.com/jdesiloniz/svpdev/tools/ssp16asm
 00000000                            ;
 00000000                            ; To assemble the SVP part and generate the final ROM:
 00000000                            ;
@@ -167,8 +167,8 @@
 00000100                            ;**********************************************************************
 00000100 5345 4741 204D 4547 4120+  	dc.b "SEGA MEGA DRIVE "                                 ; Console name
 00000110 4A61 7669 2054 6169 796F+  	dc.b "Javi Taiyou     "                                 ; Copyright holder and release date
-00000120 5356 5020 524F 4D20 5445+  	dc.b "SVP ROM TEST                                    " ; Domestic name
-00000150 5356 5020 524F 4D20 5445+  	dc.b "SVP ROM TEST                                    " ; International name
+00000120 5356 5020 4452 4157 2054+  	dc.b "SVP DRAW TEST                                   " ; Domestic name
+00000150 5356 5020 4452 4157 2054+  	dc.b "SVP DRAW TEST                                   " ; International name
 00000180 474D 204D 4B2D 3132 3239+  	dc.b "GM MK-1229 -00"                                   ; Version number - need to use the original from Virtua Racing for compatibility with MiSTer
 0000018E 0000                       	dc.w 0x0000                                             ; Checksum
 00000190 4A20 2020 2020 2020 2020+  	dc.b "J               "                                 ; I/O support
@@ -182,9 +182,9 @@
 000001BC 0000 0000                  	dc.l 0x00000000                                         ; End address of SRAM
 000001C0 0000 0000                  	dc.l 0x00000000                                         ; Unused
 000001C4 0000 0000                  	dc.l 0x00000000                                         ; Unused
-000001C8                            	; Virtua Racing ROM header has some notes, KEGA uses these to detect SVP:
-000001C8 5356 0000                  	dc.l 0x53560000											
-000001CC 2000 0400                  	dc.l 0x20000400
+000001C8 5356 0000                  	dc.l 0x53560000											; Security check to pass SVP boot-up process
+000001CC 2000                       	dc.w 0x2000
+000001CE 0400                       	dc.w 0x0400												; Code entry point at 0400
 000001D0 2020 2020                  	dc.l 0x20202020
 000001D4 2020 2020                  	dc.l 0x20202020
 000001D8 2020 2020                  	dc.l 0x20202020
@@ -269,7 +269,7 @@
 00020000                            ;
 00020000                            ; This should usually be address 0x20000, right after the space
 00020000                            ; reserved for SVP code inside the ROM.
-00020000                            ;==============================================================
+00020000                            ;**************************************************************
 00020000                            CPU_EntryPoint:
 00020000                            
 00020000                            	;***************************

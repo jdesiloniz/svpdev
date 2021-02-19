@@ -122,9 +122,9 @@ ROM_Start:
 	dc.l 0x00000000                                         ; End address of SRAM
 	dc.l 0x00000000                                         ; Unused
 	dc.l 0x00000000                                         ; Unused
-	; Virtua Racing ROM header has some notes in Shift-JIS format, KEGA uses these to detect SVP:
-	dc.l 0x53560000											
-	dc.l 0x20000400
+	dc.l 0x53560000											; Security check to pass SVP boot-up process
+	dc.w 0x2000
+	dc.w 0x0400												; Code entry point at 0400
 	dc.l 0x20202020
 	dc.l 0x20202020
 	dc.l 0x20202020

@@ -1,0 +1,55 @@
+# SSP1601 tests
+
+org 400
+
+
+test_init:			    
+                        ld a, ext0                      # Wait until all is initialized
+                        andi 0x2                        # Check if bit 1 is active (MD has written into XST)
+                        bra z=1, @test_init
+
+wait_for_initial_address:
+                        ld st, 0x0000
+                        ld a, ext0                      # Wait for MD to send us the initial address to dump to DRAM
+                        andi 0x2                        # Check if bit 1 is active (MD has written into XST)
+                        bra z=1, @wait_for_initial_address
+                        ld a, ext3                      # Get address
+
+
+                        #ld a, 0x400
+
+
+                        ld r0, 0x00
+                        ld (r0), a                     # Store address in Bank0-00
+
+prepare_PM4:
+                        ld st, 0030
+					    ld ext6, 0000
+					    ld ext6, 0818	# Load address 0x180000 with auto-increment set to 1
+					    ld ext4, -      # We'll be using PM4 to dump data into DRAM
+                        ld st, 0000    # Unset ST5 and ST6 to be able to use XST
+
+prepare_dump_size:
+                        ld y, 0x009A     # we're dumping 154 words (22 columns x 7 words per row)
+
+dump_data:
+                        ld a, (r0)                  # Get address to dump
+                        ld x, (a)                   # Load it from PRAM
+                        ld ext4, x                  # Dump it into DRAM and auto-increment
+                        
+
+                        ld a, y                     # Calculate if we're done
+                        subi a, 0x0001              # Substract one
+                        cmpi a, 0x0000              # Are we done?
+                        bra z=1, @end_dump          # if we're done, let's prepare for ending the dump
+                        ld y, a
+
+                        ld a, (r0)                  # Update address to read
+                        addi a, 0x0001
+                        ld (r0), a
+
+                        bra always, @dump_data      # we're not done: keep going
+
+end_dump:               
+                        ld ext3, 0xFFFF                        # Hey Mega Drive, I'm done here
+                        bra always, @wait_for_initial_address   # Wait for more commands

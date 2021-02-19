@@ -56,12 +56,6 @@
 ;**************************************************************
 
 	include 'init.asm'			; ROM header and initialization routines
-	include 'constants.asm'		; Constants
-	include 'macros.asm'		; VDP macros
-	include 'text.asm'			; Text drawing routines
-	include 'pixelfont.asm'		; Font
-	include 'vdp_utils.asm'		; VDP utils
-	include 'svp.asm'			; SVP comms
 
 ;**************************************************************
 ; SVP CODE PADDING
@@ -72,7 +66,26 @@
 ;***************************************************************
 SVP_PaddingStart:
 
-	DCB.b 0x20000-SVP_PaddingStart,0x00
+	DCB.b 0x1FFF4-SVP_PaddingStart,0x00
+	DC.l  0xDEADBEEF
+	DC.l  0xDEADBEEF
+	DC.l  0xDEADBEEF
+
+	include 'constants.asm'		; Constants
+	include 'macros.asm'		; VDP macros
+	include 'text.asm'			; Text drawing routines
+	include 'pixelfont.asm'		; Font
+	include 'vdp_utils.asm'		; VDP utils
+	include 'svp.asm'			; SVP comms
+	include 'dump.asm' 			; dump routines
+	include 'pads.asm'
+
+;**************************************************************
+; MEMORY MANAGEMENT
+;**************************************************************
+	RSSET 0x00FF0000				; Start a new offset table from beginning of RAM
+page_initial_address		rs.w 1	; initial address to display in this screen (for the indices to show at the left for reference)
+pad_press    				rs.w 1	; stores previous pad to check if buttons have changed
 
 ;**************************************************************
 ; CODE ENTRY POINT
@@ -95,6 +108,7 @@ CPU_EntryPoint:
 
 	; Load the initial VDP registers
 	jsr    	VDP_LoadRegisters
+	jsr 	PAD_InitPads
 	jsr 	VDP_ClearVRAM
 	jsr 	VDP_ClearCRAM
 	jsr 	LoadTextTiles
@@ -103,59 +117,27 @@ CPU_EntryPoint:
 	; Write titles
 	;**************
 
+	; Init flag for buttons pressed
+	move.w #0x0000, (pad_press)
+
 	; Draw main title:
 	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_title)*vdp_plane_width)+text_pos_x_title)*size_word)
 	lea StringTitle, a0			; address for string
 	jsr DrawTextPlaneANew
 
-	; Draw test #1 title
-	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_test1_title)*vdp_plane_width)+text_pos_x_test1_title)*size_word)
-	lea StringCommTestTitle, a0			; address for string
-	jsr DrawTextPlaneANew
+	; Tell SVP we're starting to operate with it
+	jsr InitSVP
 
-	;****************
-	; SVP test calls
-	;****************
-	; Execute test 0x100 (comm test with SVP)
-	move.w #0x0100, d2
-	move.w #0xFFFF, d1	; number of comm check retries.
-	jsr 		CheckSVPTestResult
+	; Store initial address
+	move.w #pramStartAddress, (page_initial_address)
 
-	; show value of XST (we should update this maybe?)
-	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_xst)*vdp_plane_width)+text_pos_x_xst)*size_word)
-	jsr DrawNumberTextPlaneA
-	
-	; show value of XST_state:
-	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_xst_state)*vdp_plane_width)+text_pos_x_xst_state)*size_word)
-	move.w  regXSTState, d4
-	jsr DrawNumberTextPlaneA
-	
-	; Show what's on DRAM now:
-	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_dram_init)*vdp_plane_width)+text_pos_x_dram_init)*size_word)
-	lea 0x00300000, a0
-    move.w (a0), d4     ; copy test results from DRAM
-	jsr DrawNumberTextPlaneA
-    
-	cmp.w #0xFFAA, d4
-	beq @TestSuccess00
-	bne @TestFailure00
+	; Ask data for first batch of data in DRAM:
+	jsr SVPDumpData
 
-	@TestSuccess00:
-	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_test1_result)*vdp_plane_width)+text_pos_x_test1_result)*size_word)
-	lea StringOK, a0			; address for string
-	jsr DrawTextPlaneANew
-	bra @Stop
-
-	@TestFailure00:
-	SetVRAMWrite vram_addr_plane_b+((((text_pos_y_test1_result)*vdp_plane_width)+text_pos_x_test1_result)*size_word)
-	lea StringError, a0			; address for string
-	jsr DrawTextPlaneANew
-	bra @Stop
+	jsr VDP_InitStatusRegister
 
 	@Stop:
 	bra @stop
-
-	jsr VDP_InitStatusRegister
 
 	; Finished!
 	
@@ -168,7 +150,65 @@ CPU_EntryPoint:
 
 ; Vertical interrupt - run once per frame (50hz in PAL, 60hz in NTSC)
 INT_VInterrupt:
+	; Print data already in DRAM:
+	jsr PrintDumpedData
+
+	; Read pad and check if we need to change "page"
+	jsr    PAD_ReadPadA
+	
+	move.w (pad_press), d1
+	cmp.w  d1, d0
+	bne @HandleButtonPressChange
+
 	rte
+
+@HandleButtonPressChange
+	move.w d0, (pad_press)
+	btst   #pad_button_right, d0
+	bne    @IncreasePage
+
+	btst 	#pad_button_left, d0
+	bne 	@DecreasePage
+
+	rte
+
+@IncreasePage:   ; max = FF66
+    move.w (page_initial_address), d0    
+    add.w #0x9A, d0
+	move.w d0, d1
+	sub.w #0x0001, d1
+    cmp.w #0xFF66, d1
+    bcc @IncreasePageMax
+    move d0, (page_initial_address)
+    bra @IncreasePageDump
+
+@IncreasePageMax:
+    move.w #0xFF66, (page_initial_address)
+
+@IncreasePageDump:
+	; if we changed page, ask SVP for the proper data to show next frame
+    jsr SVPDumpData
+
+@IncreasePageExit:
+    rte
+
+@DecreasePage:
+    move.w (page_initial_address), d0    
+    sub.w #0x9A, d0
+	cmp.w #0x0000, d0
+    bls @DecreasePageMin
+    move d0, (page_initial_address)
+    bra @DecreasePageDump
+
+@DecreasePageMin:
+    move.w #0x0000, (page_initial_address)
+
+@DecreasePageDump:
+	; if we changed page, ask SVP for the proper data to show next frame
+    jsr SVPDumpData
+
+@DecreasePageExit:
+    rte
 
 ; Horizontal interrupt - run once per N scanlines (N = specified in VDP register 0xA)
 INT_HInterrupt:
@@ -191,31 +231,21 @@ CPU_Exception:
 ; Strings and Text coordinates
 ;******************************
 StringTitle:
-	dc.b "SVP TEST ROM",0
-StringCommTestTitle:
-	dc.b "BASIC SVP COMM TEST",0
-StringOK:
-	dc.b "OK",0
-StringError:
-	dc.b "ERR",0
+	dc.b "SVP MEM BROWSER",0
 StringException:
 	dc.b "EXC", 0
 
 ; Text draw position (in tiles)
 text_pos_y_title			equ 0x01
-text_pos_x_title			equ 0x0D
-text_pos_y_test1_title		equ 0x03
-text_pos_x_test1_title		equ 0x02
-text_pos_y_test1_result		equ 0x03
-text_pos_x_test1_result		equ 0x20
-text_pos_y_xst				equ 0x18
-text_pos_x_xst				equ 0x02
-text_pos_y_xst_state		equ 0x19
-text_pos_x_xst_state		equ 0x02
-text_pos_y_dram_init		equ 0x1A
-text_pos_x_dram_init		equ 0x02
+text_pos_x_title			equ 0x0C
+text_pos_y_reg_pad_data_pr 	equ 0x01
+text_pos_x_reg_pad_data_pr	equ 0x01
+text_pos_y_reg_pad_data 	equ 0x01
+text_pos_x_reg_pad_data		equ 0x10
+
 text_pos_y_exc				equ 0x00
 text_pos_x_exc				equ 0x00
+
 
 ; A label defining the end of ROM so we can compute the total size.
 ROM_End:
