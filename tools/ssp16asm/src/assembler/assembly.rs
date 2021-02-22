@@ -289,7 +289,7 @@ pub fn extract_tables<'a>(
                 }
             };
 
-            current_address += size;
+            current_address = current_address.wrapping_add(size);
 
             (symbols, equs, equbs, Some(*token))
         },
