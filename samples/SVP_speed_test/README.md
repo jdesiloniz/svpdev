@@ -1,12 +1,11 @@
-# SVP tests
+# SVP Speed Test
 
-This is a basic code sample that allows to run "unit test"-like routines in the SVP chip. Currently it only runs a basic comms check but it'll be updated with a series of tests intended to double check our current understanding of the SVP behavior.
+This code sample executes a routine in the SVP side multiple times for a specific set of time (determined by the Mega Drive side - in this example during 250 frames or 5 seconds in an European console), in order to determine how fast code is run from the IRAM and IROM compared to the external ROM. At boot-up you can choose from which source to run the test (by pressing A, B or C in the control pad).
 
 ## Code structure
 
-- **main.asm**: main file for the 68000 side of the sample. It allows sending "test commands" to the SVP to run different tests, and showing the results on screen.
-- **svp.asm**: additional routines to communicate with the SVP side.
-- **tests.svp**: main file for the SVP side of the sample, containing the actual test code and communications with the Mega Drive side.
+- **main.asm**: main file for the 68000 side of the sample. It allows sending "test commands" to the SVP to run the speed tests from the different sources, showing the results on screen.
+- **tests.svp**: contains the code to run the different tests. The routine being run is taken from the SVP's internal ROM disassembly to be able to test the speed of code run from there too, but adapted to refer to the proper jump addresses in both the ROM and IRAM sides.
 
 Besides these, other files handle VDP initialization, printing text in screen, etc...
 
