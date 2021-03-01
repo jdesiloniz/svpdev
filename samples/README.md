@@ -7,6 +7,7 @@ A collection of code samples targetting SEGA's SVP chip found in the Mega Drive/
 - **SVP_basic_gfx**: a basic example showcasing basic Mega Drive/SVP communications + creating pixel data in SVP + sending data back to the Mega Drive side.
 - **SVP_tests**: a collection of "unit tests" for the SVP code (WIP: currently just tests basic communications between SVP and Mega Drive).
 - **SVP_mem_reader**: allows browsing program memory through the internal view in SVP. This is what allowed discovery of the [SVP Internal ROM](https://github.com/jdesiloniz/svpdev/wiki/Internal-ROM).
+- **SVP_speed_test**: runs a basic benchmark to research on how fast code runs from IRAM, ROM and IROM.
 
 ## Warning
 

@@ -1,0 +1,267 @@
+# Speed test between different code sources
+
+org 400
+
+TestInitId:                       EQU 0x0001
+TestROMId:                        EQU 0x0100
+TestIRAMId:                       EQU 0x0200
+TestIROMId:                       EQU 0x0300
+
+CurrentNumberOfOperationsOffset:        EQU 0x0100
+
+
+test_init:				eor a, a
+                        ld st, 0x0000
+                        ld r0, 0x00
+                        ld r1, 0xF0         # To store number of iterations
+                        ld r2, 0xA0         # Number of iterations overflow
+                        ld r6, 0xFC
+                        ld ext7, 0x0000
+
+wait_for_megadrive:     
+                        ld a, ext0
+                        andi 0x2                        # Check if bit 1 is active (MD has written into XST)
+                        bra z=1, @wait_for_megadrive
+                        ld x, ext3                      # Read test number written by MD
+                        ld a, x
+                        
+                        cmpi a, @TestInitId
+                        bra z=1, @PrepareTest
+                        
+                        cmpi a, @TestROMId
+                        bra z=1, @TestFromROM
+                        
+                        cmpi a, @TestIRAMId
+                        bra z=1, @TestFromIRAM
+                        
+                        cmpi a, @TestIROMId
+                        bra z=1, @TestFromIROM
+                        
+                        bra always, @wait_for_megadrive
+
+PrepareTest:    
+                # Prepare operands for ops
+                ld (r7|00), 0x0100
+                ld (r7|01), 0x8000
+                ld (r7|10), 0x0200
+                ld (r7|11), 0xA000
+
+                ld (r1), 0x0000     # clear number of iterations
+                ld (r2), 0x0000
+
+                # Load IRAM code
+                ld a, 0x00FF        # it's really 0x52 but just in case
+                ld (r0), @iram_addition
+                
+                ld ext6, 0x8000
+                ld ext6, 0x081C
+                ld ext4, -          # Writes with auto-increment to IRAM from address 0000
+
+                ld ext7, 0x0000
+
+IRAM_copy_loop: 
+                ld ext4, ((r0))
+                subi 0x01
+                bra n=0, @IRAM_copy_loop
+
+                ld ext3, 0xFFFF     # let MD know we're ready to do tests
+                bra always, @wait_for_megadrive
+                
+TestFromROM:
+                ld a, 0x0000
+                ld ext7, 0x0000
+                ld (r1), 0x0000
+                ld (r2), 0x0000
+                ld ext6, 0x0000
+                ld ext6, 0x0018
+                ld ext4, -          # Program to write test result in DRAM 0x0000
+TestFromROMLoop:
+                ld (r6), @StoreResultsFromROM
+                bra always, @rom_addition
+StoreResultsFromROM:
+                ld ext6, 0x0000
+                ld ext6, 0x0018
+                ld ext4, -
+
+                ld a, (r1)
+                addi 0x01
+                ld (r1), a
+                ld ext4, a  # update test state in MD side
+
+                ld ext7, 0x0000
+                cmpi a, 0x0000
+                bra z=0, @CheckTestFromROMEnd
+                ld a, (r2)
+                addi 0x01
+                ld (r2), a
+
+                ld ext6, 0x0001
+                ld ext6, 0x0018
+                ld ext4, -
+                ld ext4, a
+
+CheckTestFromROMEnd:
+                ld a, ext0
+                andi 0x2                        # If MD has written, we stop the test
+                bra z=1, @TestFromROMLoop
+
+                ld ext6, 0x0001
+                ld ext6, 0x0018
+                ld ext4, -
+                ld ext4, (r2)
+
+                ld (r1), 0x0000
+                ld (r2), 0x0000
+
+                bra always, @wait_for_megadrive
+                        
+
+TestFromIRAM:
+                ld a, 0x0000
+                ld ext7, 0x0000
+                ld (r1), 0x0000
+                ld (r2), 0x0000
+                ld ext6, 0x0000
+                ld ext6, 0x0018
+                ld ext4, -          # Program to write test result in DRAM 0x0000
+TestFromIRAMLoop:
+                ld (r6), @StoreResultsFromIRAM
+                bra always, 0x0000
+StoreResultsFromIRAM:
+                ld ext6, 0x0000
+                ld ext6, 0x0018
+                ld ext4, -
+
+                ld a, (r1)
+                addi 0x01
+                ld (r1), a
+                ld ext4, a  # update test state in MD side
+
+                ld ext7, 0x0000
+                cmpi a, 0x0000
+                bra z=0, @CheckTestFromIRAMEnd
+                ld a, (r2)
+                addi 0x01
+                ld (r2), a
+
+                ld ext6, 0x0001
+                ld ext6, 0x0018
+                ld ext4, -
+                ld ext4, a
+
+CheckTestFromIRAMEnd:
+                ld a, ext0
+                andi 0x2                        # If MD has written, we stop the test
+                bra z=1, @TestFromIRAMLoop
+
+                ld ext6, 0x0001
+                ld ext6, 0x0018
+                ld ext4, -
+                ld ext4, (r2)
+
+                ld (r1), 0x0000
+                ld (r2), 0x0000
+
+                bra always, @wait_for_megadrive
+
+
+TestFromIROM:
+                ld a, 0x0000
+                ld ext7, 0x0000
+                ld (r1), 0x0000
+                ld (r2), 0x0000
+                ld ext6, 0x0000
+                ld ext6, 0x0018
+                ld ext4, -          # Program to write test result in DRAM 0x0000
+TestFromIROMLoop:
+                ld (r6), @StoreResultsFromIROM
+                bra always, @irom_addition
+StoreResultsFromIROM:
+                ld ext6, 0x0000
+                ld ext6, 0x0018
+                ld ext4, -
+
+                ld a, (r1)
+                addi 0x01
+                ld (r1), a
+                ld ext4, a  # update test state in MD side
+
+                ld ext7, 0x0000
+                cmpi a, 0x0000
+                bra z=0, @CheckTestFromIROMEnd
+                ld a, (r2)
+                addi 0x01
+                ld (r2), a
+
+                ld ext6, 0x0001
+                ld ext6, 0x0018
+                ld ext4, -
+                ld ext4, a
+
+CheckTestFromIROMEnd:
+                ld a, ext0
+                andi 0x2                        # If MD has written, we stop the test
+                bra z=1, @TestFromIROMLoop
+
+                ld ext6, 0x0001
+                ld ext6, 0x0018
+                ld ext4, -
+                ld ext4, (r2)
+
+                ld (r1), 0x0000
+                ld (r2), 0x0000
+
+                bra always, @wait_for_megadrive
+
+org C000
+
+# Code to move to IRAM
+
+iram_addition:
+            ld a, (r7|01)
+            add a, (r7|11)
+            ld (r3|01), a
+            ld a, 0000
+            bra l=0, 0x0008         # Handling carry
+            addi 0x01
+iram_carry:  
+            add a, (r7|00)
+            add a, (r7|10)
+            ld (r3|00), a           # Store result
+            ld ext7, (r3|01)
+            ld pc, (r6+!)           # RET!
+
+
+org D000
+
+rom_addition:
+            ld a, (r7|01)
+            add a, (r7|11)
+            ld (r3|01), a
+            ld a, 0000
+            bra l=0, @rom_carry     # Handling carry
+            addi 0x01
+rom_carry:  
+            add a, (r7|00)
+            add a, (r7|10)
+            ld (r3|00), a           # Store result
+            ld ext7, (r3|01)
+            ld pc, (r6+!)           # RET!
+
+# Actual ROM code 
+
+org 0xFC8F
+
+irom_addition:
+            ld a, (r7|01)
+            add a, (r7|11)
+            ld (r3|01), a
+            ld a, 0000
+            bra l=0, @irom_carry     # Handling carry
+            addi 0x01
+irom_carry:  
+            add a, (r7|00)
+            add a, (r7|10)
+            ld (r3|00), a           # Store result
+            ld ext7, (r3|01)
+            ld pc, (r6+!)           # RET!
